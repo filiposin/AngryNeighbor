@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d206ff41fcf3f8148a82e253f6e29bea, type: 3}
+  m_Name: Clock
+  m_EditorClassIdentifier: 
+  id: Clock
+  displayName: 
+  icon: {fileID: 21300000, guid: 8d5fdcc620a00cf41b539dcc2b26303e, type: 3}
+  itemPrefab: {fileID: 3380269287546117703, guid: 7e335eebd0da4ce4cba66386bdf3f1d6,
+    type: 3}
+  holdPosition: {x: 0.111, y: 0.007, z: 0.144}
+  holdEulerRotation: {x: 134.648, y: 270.667, z: 452.74}
+  throwForce: 8
+  spawnDistanceFromCamera: 0.1
+  poolSize: 0
+  useCooldown: 0.2
+  pickupSound: {fileID: 8300000, guid: 5b8fe2531f31f4740bda83215cb6bf9d, type: 3}
+  defaultHitGroundSound: {fileID: 8300000, guid: d59e834da7ba54f4e8eaa7451ce4553a,
+    type: 3}
+  specificGroundHitSounds: []
+  guid: 6f7e4ad9-5cae-457e-99f9-2b7d3c1abae6
+  anim_EquipState: Equip
+  anim_IdleState: Idle_Handgun
+  anim_UseState: Use
+  anim_DropState: Drop
