@@ -89,6 +89,21 @@ public class FP_Controller : MonoBehaviour, ICrouchState
     private bool pcWantsLock = true;          // то, чего хочет игрок (toggle по Esc)
     private bool lastUseMobileInput = false;  // чтобы ловить переключение мобилка/ПК
     
+    public bool IsCursorForcedUnlocked { get; private set; } = false;
+
+    public void ForceCursorUnlock(bool force)
+    {
+        IsCursorForcedUnlocked = force;
+        if (force)
+        {
+            ApplyCursorState(false);
+        }
+        else
+        {
+            HandlePCCursorLock();
+        }
+    }
+    
     void Awake()
     {
         //Application.targetFrameRate = bublicfps;
@@ -506,6 +521,12 @@ public class FP_Controller : MonoBehaviour, ICrouchState
         {
             lastUseMobileInput = true;
             pcWantsLock = false;          // чтобы при возвращении на ПК не лочило само
+            if (cursorLocked) ApplyCursorState(false);
+            return;
+        }
+
+        if (IsCursorForcedUnlocked)
+        {
             if (cursorLocked) ApplyCursorState(false);
             return;
         }

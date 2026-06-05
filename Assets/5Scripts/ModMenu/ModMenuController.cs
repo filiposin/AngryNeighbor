@@ -1,27 +1,21 @@
 using UnityEngine;
-using Pathfinding; // A* Pathfinding
 using System.Collections.Generic;
-using UnityEngine.SceneManagement;
-using System.IO; // Для работы с файлами
-using System;
 
 public class ModMenuController : MonoBehaviour
 {
     [Header("Настройки")]
-    public bool forceEnableDevMode = false;
-    public string allowedSceneName = "World";
+    public bool canUseModMenu = false;
     
-    // --- НОВОЕ: Ссылка на материал ---
     [Header("Материалы")]
-    public Material buildingMaterial; // Сюда нужно перетащить материал в инспекторе
+    public Material buildingMaterial;
 
     // --- Состояния меню ---
     private bool showMenu = false;
     private int currentTab = 0; 
-    private string[] tabNames = { "MAIN", "STATS", "FUN", "SPAWNER", "ITEMS", "EDITOR" }; 
+    private string[] tabNames = { "Player Settings", "Enemy Settings", "Fun & Memes", "Item Spawner", "Object Editor", "Menu Manager" }; 
     private Vector2 scrollPosition;
 
-    // --- MAIN ---
+    // --- Переменные функций ---
     private bool godMode = false;
     private bool flyMode = false; 
     private bool flyUpMode = false; 
@@ -31,33 +25,43 @@ public class ModMenuController : MonoBehaviour
     private bool muteEnemyAudio = false;
     private float uiOpacity = 1.0f; 
 
-    // --- STATS ---
     private float customWalkSpeed = 6.0f;
     private float customJumpForce = 8.0f;
     private float customEnemyHeight = 1.0f;
     private float customEnemyWidth = 1.0f;
     private float customEnemySpeed = 6.0f; 
 
-    // --- FUN ---
+    // --- ФАН И МЕМЫ ---
     private bool spinBotMode = false; 
     private bool wideMode = false;
+    private bool slenderMode = false;
+    private bool pancakeMode = false; // Режим блинчика
     private bool upsideDownCamera = false; 
-    private float customFOV = 90f;
+    private bool drunkMode = false;
+    private bool acidMode = false;
+    private bool earthquakeMode = false;
+    private float customFOV = 80f;
     private string customScreenText = ""; 
     private bool showScreenText = false;
+    private float customTimeScale = 1.0f;
+    private bool discoMode = false;
+    private float customPlayerScale = 1.0f;
+    private bool lowGravity = false;
+    private Color originalAmbientLight;
+    
+    // --- КАСТОМИЗАЦИЯ МЕНЮ ---
+    private string menuTitle = "Hacked By Mongabox [YouTube]";
+    private Color currentBgColor = new Color(0.07f, 0.05f, 0.15f, 0.95f);
 
-    // --- EDITOR ---
+    // --- Редактор объектов ---
     private GameObject currentHitObject; 
     private GameObject lockedObject;     
     private bool isObjectLocked = false;
     private float editorMoveStep = 0.5f; 
     private float editorRotStep = 45f;   
     private float editorScaleStep = 0.5f;
-    
-    private string saveFileName = "map_01";
-    private string lastSaveMessage = "";
 
-    // --- ITEMS ---
+    // --- Списки предметов ---
     private List<GameObject> itemPrefabs = new List<GameObject>();
     private List<GameObject> keyPrefabs = new List<GameObject>();
     private List<GameObject> meleePrefabs = new List<GameObject>();
@@ -65,47 +69,59 @@ public class ModMenuController : MonoBehaviour
 
     // --- Ссылки ---
     private FP_Controller playerController;
+    private float originalPlayerGravity = 20f;
     private CanvasGroup playerCanvasGroup;
-    private RichAI_EnemyController mainEnemy;
+    private node_AIMovement mainEnemy;
     private GameObject enemyPrefabTemplate;
     private Camera mainCam;
 
     // --- GUI ---
     private Rect windowRect;
-    private Texture2D boxTexture;
-    private GUIStyle bigTextStyle; 
+    private Texture2D bgTex, whiteTex, transparentTex, activeTabTex;
+    private GUIStyle contentStyle, btnStyle, titleStyle, textStyle, tabStyle, closeBtnStyle;
     public static ModMenuController Instance;
 
     void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
-        DontDestroyOnLoad(gameObject);
 
-        boxTexture = new Texture2D(1, 1);
-        boxTexture.SetPixel(0, 0, Color.green);
-        boxTexture.Apply();
+        bgTex = MakeTex(1, 1, currentBgColor);
+        whiteTex = MakeTex(1, 1, Color.white);
+        transparentTex = MakeTex(1, 1, Color.clear);
+        activeTabTex = MakeTex(1, 1, new Color(1f, 1f, 1f, 0.15f)); 
     }
 
     void Start()
     {
-        float width = Mathf.Min(Screen.width * 0.9f, 650); 
-        float height = Mathf.Min(Screen.height * 0.85f, 800);
-        windowRect = new Rect((Screen.width - width) / 2, (Screen.height - height) / 2, width, height);
+        float width = 850f; float height = 450f;
+        if (Application.isMobilePlatform)
+            windowRect = new Rect((1280f - width) / 2, (720f - height) / 2, width, height);
+        else
+            windowRect = new Rect((Screen.width - width) / 2, (Screen.height - height) / 2, width, height);
+            
+        originalAmbientLight = RenderSettings.ambientLight;
 
         LoadItemsFromResources();
         FindReferences();
     }
 
-    private bool IsModMenuUnlocked()
+    private Texture2D MakeTex(int width, int height, Color col)
     {
-        return forceEnableDevMode || PlayerPrefs.GetInt("NightmareCompleted", 0) == 1;
+        Color[] pix = new Color[width * height];
+        for (int i = 0; i < pix.Length; ++i) pix[i] = col;
+        Texture2D result = new Texture2D(width, height);
+        result.SetPixels(pix); result.Apply(); return result;
     }
+
+    private void ChangeBgColor(Color newColor)
+    {
+        currentBgColor = newColor;
+        bgTex = MakeTex(1, 1, currentBgColor);
+    }
+
+    public void EnableModMenu() { canUseModMenu = true; }
+    public bool IsGodModeActive() { return godMode; }
 
     void LoadItemsFromResources()
     {
@@ -117,22 +133,29 @@ public class ModMenuController : MonoBehaviour
 
     void Update()
     {
-        if (!IsModMenuUnlocked()) return;
-        if (SceneManager.GetActiveScene().name != allowedSceneName) return;
-
+        if (!canUseModMenu) return;
         if (playerController == null) FindReferences();
         
-        if (showMenu && !isObjectLocked && mainCam != null)
+        if (Input.GetKeyDown(KeyCode.F1))
         {
-            Ray ray = mainCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-            if (Physics.Raycast(ray, out RaycastHit hit, 50f))
+            showMenu = !showMenu;
+            if (playerController) 
             {
-                currentHitObject = hit.collider.gameObject;
+                playerController.canControl = !showMenu;
+                playerController.ForceCursorUnlock(showMenu);
             }
             else
             {
-                currentHitObject = null;
+                if (showMenu) { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
+                else if (!Application.isMobilePlatform) { Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false; }
             }
+        }
+
+        if (showMenu && !isObjectLocked && mainCam != null && currentTab == 4)
+        {
+            Ray ray = mainCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+            if (Physics.Raycast(ray, out RaycastHit hit, 50f)) currentHitObject = hit.collider.gameObject;
+            else currentHitObject = null;
         }
 
         ApplyContinuousEffects();
@@ -140,253 +163,261 @@ public class ModMenuController : MonoBehaviour
 
     private void FindReferences()
     {
-        playerController = FindFirstObjectByType<FP_Controller>();
+        playerController = GetComponent<FP_Controller>();
+        if (playerController == null) playerController = FindFirstObjectByType<FP_Controller>();
         mainCam = Camera.main;
 
         if (playerController != null)
         {
             playerCanvasGroup = playerController.GetComponentInChildren<CanvasGroup>(true);
-            
-            if (customWalkSpeed == 0)
-            {
-                customWalkSpeed = playerController.walkSpeed;
-                customJumpForce = playerController.jumpForce;
-            }
+            if (customWalkSpeed == 0) { customWalkSpeed = playerController.walkSpeed; customJumpForce = playerController.jumpForce; }
+            if (originalPlayerGravity == 20f) originalPlayerGravity = playerController.gravity; // Сохраняем начальную гравитацию FP_Controller
         }
 
-        if (mainCam != null && customFOV == 0) 
-        {
-            customFOV = mainCam.fieldOfView;
-        }
+        if (mainCam != null && customFOV == 0) customFOV = mainCam.fieldOfView;
         
         if (mainEnemy == null)
         {
-            mainEnemy = FindFirstObjectByType<RichAI_EnemyController>();
+            mainEnemy = FindFirstObjectByType<node_AIMovement>();
             if (mainEnemy != null)
             {
                 customEnemyHeight = mainEnemy.transform.localScale.y;
                 customEnemyWidth = mainEnemy.transform.localScale.x;
-                customEnemySpeed = mainEnemy.chaseSpeed; 
+                customEnemySpeed = mainEnemy.speedSettings.chaseSpeed; 
                 enemyPrefabTemplate = mainEnemy.gameObject;
             }
         }
     }
 
-    public bool IsGodModeActive() => godMode;
-
     void ApplyContinuousEffects()
     {
+        // ВРЕМЯ
+        Time.timeScale = customTimeScale;
+
+        // ГРАВИТАЦИЯ (И для мира, и для игрока)
+        Physics.gravity = lowGravity ? new Vector3(0, -2f, 0) : new Vector3(0, -9.81f, 0);
+
+        // ДИСКО МОД
+        if (discoMode) RenderSettings.ambientLight = Color.HSVToRGB(Mathf.PingPong(Time.unscaledTime * 2f, 1f), 1f, 1f);
+        else RenderSettings.ambientLight = originalAmbientLight;
+
         if (playerController != null)
         {
+            playerController.transform.localScale = Vector3.one * customPlayerScale;
+            
+            // Фикс Moon Gravity для FP_Controller
+            playerController.gravity = lowGravity ? 3f : originalPlayerGravity;
+
             if (flyUpMode)
             {
-                if (playerController.controller.enabled) 
-                    playerController.controller.enabled = false;
-                playerController.transform.position += Vector3.up * 8f * Time.deltaTime;
+                if (playerController.controller.enabled) playerController.controller.enabled = false;
+                playerController.transform.position += Vector3.up * 8f * Time.unscaledDeltaTime;
             }
-            else if (!flyMode)
-            {
-                if (!playerController.controller.enabled) 
-                    playerController.controller.enabled = true;
-            }
+            else if (!flyMode && !playerController.controller.enabled) playerController.controller.enabled = true;
         }
 
         if (playerCanvasGroup != null) playerCanvasGroup.alpha = uiOpacity;
 
-        var allEnemies = FindObjectsByType<RichAI_EnemyController>(FindObjectsSortMode.None);
+        // МЕМЫ С СОСЕДОМ
+        var allEnemies = FindObjectsByType<node_AIMovement>(FindObjectsSortMode.None);
         foreach (var enemy in allEnemies)
         {
             if(enemy == null) continue;
             if (enemy.chaseAudio != null) enemy.chaseAudio.mute = muteEnemyAudio;
 
-            var ai = enemy.GetComponent<RichAI>();
-            if (ai != null) ai.maxSpeed = customEnemySpeed;
-            enemy.chaseSpeed = customEnemySpeed;
-            enemy.walkSpeed = Mathf.Min(customEnemySpeed, enemy.walkSpeed); 
+            if (spinBotMode && !freezeEnemy) enemy.transform.Rotate(0, 1500f * Time.unscaledDeltaTime, 0);
 
-            if (spinBotMode && !freezeEnemy) enemy.transform.Rotate(0, 1500f * Time.deltaTime, 0);
-
-            if (wideMode) enemy.transform.localScale = new Vector3(3.0f, 0.5f, 1.0f);
-            else enemy.transform.localScale = new Vector3(customEnemyWidth, customEnemyHeight, customEnemyWidth);
+            if (pancakeMode) enemy.transform.localScale = new Vector3(3.0f, 0.1f, 3.0f);
+            else if (wideMode) enemy.transform.localScale = new Vector3(3.0f, 0.5f, 1.0f);
+            else if (slenderMode) enemy.transform.localScale = new Vector3(0.3f, 3.5f, 0.3f);
         }
 
+        // МЕМЫ С КАМЕРОЙ
+        if (mainCam != null)
+        {
+            if (acidMode) customFOV = 80f + Mathf.Sin(Time.time * 5f) * 50f; // Угарная пульсация FOV
+            
+            mainCam.fieldOfView = customFOV;
+            
+            float targetZ = upsideDownCamera ? 180f : 0f;
+            if (drunkMode) targetZ += Mathf.Sin(Time.time * 3f) * 15f; // Пьяное покачивание
+            
+            mainCam.transform.localEulerAngles = new Vector3(mainCam.transform.localEulerAngles.x, mainCam.transform.localEulerAngles.y, targetZ);
+
+            if (earthquakeMode) mainCam.transform.localEulerAngles += (Vector3)UnityEngine.Random.insideUnitCircle * 5f; // Тряска
+        }
+    }
+
+    void ResetCamera()
+    {
+        customFOV = 80f;
+        upsideDownCamera = false;
+        drunkMode = false;
+        acidMode = false;
+        earthquakeMode = false;
         if (mainCam != null)
         {
             mainCam.fieldOfView = customFOV;
-            float targetZ = upsideDownCamera ? 180f : 0f;
-            mainCam.transform.localEulerAngles = new Vector3(mainCam.transform.localEulerAngles.x, mainCam.transform.localEulerAngles.y, targetZ);
+            mainCam.transform.localEulerAngles = Vector3.zero;
         }
+    }
+
+    void InitStyles()
+    {
+        if (btnStyle != null) return;
+        btnStyle = new GUIStyle(GUI.skin.button);
+        btnStyle.normal.background = transparentTex; btnStyle.normal.textColor = Color.white;
+        btnStyle.hover.textColor = new Color(0.8f, 0.8f, 1f);
+        btnStyle.alignment = TextAnchor.MiddleCenter; btnStyle.fontSize = 13;
+
+        tabStyle = new GUIStyle(btnStyle);
+        tabStyle.alignment = TextAnchor.MiddleLeft; tabStyle.padding = new RectOffset(15, 0, 0, 0); tabStyle.fontSize = 14;
+
+        titleStyle = new GUIStyle(GUI.skin.label);
+        titleStyle.normal.textColor = Color.red; titleStyle.alignment = TextAnchor.MiddleCenter;
+        titleStyle.fontStyle = FontStyle.Bold; titleStyle.fontSize = 16;
+
+        textStyle = new GUIStyle(GUI.skin.label);
+        textStyle.normal.textColor = Color.white; textStyle.alignment = TextAnchor.MiddleLeft; textStyle.fontSize = 13;
+
+        closeBtnStyle = new GUIStyle(btnStyle);
+        closeBtnStyle.normal.textColor = Color.red; closeBtnStyle.fontSize = 20; closeBtnStyle.fontStyle = FontStyle.Bold;
     }
 
     void OnGUI()
     {
-        if (!IsModMenuUnlocked()) return;
-        if (SceneManager.GetActiveScene().name != allowedSceneName) return;
-
-        if (bigTextStyle == null)
+        if (!canUseModMenu) return;
+        
+        float sw = Screen.width; float sh = Screen.height;
+        if (Application.isMobilePlatform)
         {
-            bigTextStyle = new GUIStyle(GUI.skin.label);
-            bigTextStyle.fontSize = 40;
-            bigTextStyle.fontStyle = FontStyle.Bold;
-            bigTextStyle.normal.textColor = Color.red;
-            bigTextStyle.alignment = TextAnchor.MiddleCenter;
+            sw = 1280f; sh = 720f;
+            float rx = Screen.width / 1280f;
+            float ry = Screen.height / 720f;
+            GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(rx, ry, 1));
         }
+
+        InitStyles();
 
         if (showScreenText && !string.IsNullOrEmpty(customScreenText))
         {
-            GUI.Label(new Rect(0, Screen.height * 0.15f, Screen.width, 100), customScreenText, bigTextStyle);
+            GUIStyle bigTxt = new GUIStyle(titleStyle) { fontSize = 50, normal = { textColor = Color.red } };
+            GUI.Label(new Rect(0, sh * 0.15f, sw, 100), customScreenText, bigTxt);
         }
-
-        GUIStyle btnStyle = new GUIStyle(GUI.skin.button);
-        btnStyle.fontSize = 20; btnStyle.fixedHeight = 45;
-
-        GUIStyle labelStyle = new GUIStyle(GUI.skin.label);
-        labelStyle.fontSize = 18; labelStyle.alignment = TextAnchor.MiddleCenter;
-
-        GUIStyle tabStyle = new GUIStyle(GUI.skin.button);
-        tabStyle.fontSize = 12; tabStyle.fixedHeight = 35;
 
         if (!showMenu)
         {
-            if (GUI.Button(new Rect(Screen.width - 90, 20, 70, 70), "MOD", btnStyle))
+            GUIStyle openBtn = new GUIStyle(GUI.skin.button) { fontSize = 18, fontStyle = FontStyle.Bold };
+            if (GUI.Button(new Rect(sw - 90, 20, 70, 70), "MOD", openBtn))
             {
                 showMenu = true;
-                if (playerController) playerController.canControl = false;
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
+                if (playerController) 
+                {
+                    playerController.canControl = false;
+                    playerController.ForceCursorUnlock(true);
+                }
+                else
+                {
+                    Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
+                }
             }
-            if (espEnabled) DrawAllEnemiesESP();
+            if (espEnabled) DrawAllEnemiesESP(sw, sh);
             return;
         }
 
-        if (espEnabled) DrawAllEnemiesESP();
+        if (espEnabled) DrawAllEnemiesESP(sw, sh);
 
-        if (currentHitObject != null && !isObjectLocked)
-        {
-             GUI.Label(new Rect(Screen.width/2 - 100, Screen.height/2 + 20, 200, 30), $"[ {currentHitObject.name} ]", labelStyle);
-        }
+        if (currentHitObject != null && !isObjectLocked && currentTab == 4)
+             GUI.Label(new Rect(sw/2 - 100, sh/2 + 20, 200, 30), $"[ {currentHitObject.name} ]", textStyle);
 
-        GUI.backgroundColor = new Color(0.1f, 0.1f, 0.1f, 0.95f);
-        windowRect = GUI.Window(0, windowRect, (id) => DrawWindowContent(id, btnStyle, labelStyle, tabStyle), "MOD MENU - " + allowedSceneName);
+        GUI.backgroundColor = Color.clear;
+        windowRect = GUI.Window(0, windowRect, DrawModernWindow, "", GUIStyle.none);
     }
 
-    void DrawWindowContent(int windowID, GUIStyle btnStyle, GUIStyle labelStyle, GUIStyle tabStyle)
+    void DrawModernWindow(int windowID)
     {
-        currentTab = GUILayout.Toolbar(currentTab, tabNames, tabStyle);
+        GUI.DrawTexture(new Rect(0, 0, windowRect.width, windowRect.height), bgTex);
+        DrawRectOutline(new Rect(0, 0, windowRect.width, windowRect.height), 2f, whiteTex);
+
+        // --- КНОПКА ЗАКРЫТИЯ В УГЛУ ---
+        if (GUI.Button(new Rect(windowRect.width - 40, 5, 35, 35), "X", closeBtnStyle))
+        {
+            showMenu = false;
+            if (playerController) 
+            {
+                playerController.canControl = true;
+                playerController.ForceCursorUnlock(false);
+            }
+            else if (!Application.isMobilePlatform)
+            {
+                Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false;
+            }
+        }
+
         GUILayout.Space(10);
+        GUILayout.Label(menuTitle, titleStyle); // Используем кастомный заголовок
+        GUILayout.Space(10);
+
+        GUILayout.BeginHorizontal();
+
+        GUILayout.BeginVertical(GUILayout.Width(180));
+        for (int i = 0; i < tabNames.Length; i++)
+        {
+            Rect btnRect = GUILayoutUtility.GetRect(new GUIContent(tabNames[i]), tabStyle, GUILayout.Height(35));
+            if (currentTab == i) GUI.DrawTexture(btnRect, activeTabTex);
+            if (GUI.Button(btnRect, tabNames[i], tabStyle)) currentTab = i;
+        }
+        GUILayout.EndVertical();
+
+        Rect sepRect = GUILayoutUtility.GetRect(2, windowRect.height - 40, GUILayout.Width(2));
+        GUI.DrawTexture(sepRect, whiteTex);
+        GUILayout.Space(10);
+
+        GUILayout.BeginVertical();
         scrollPosition = GUILayout.BeginScrollView(scrollPosition);
+        GUILayout.Space(5);
 
         switch (currentTab)
         {
-            case 0: DrawMainTab(btnStyle, labelStyle); break;
-            case 1: DrawStatsTab(btnStyle, labelStyle); break;
-            case 2: DrawFunTab(btnStyle, labelStyle); break;
-            case 3: DrawSpawnerTab(btnStyle, labelStyle); break;
-            case 4: DrawItemsTab(btnStyle, labelStyle); break;
-            case 5: DrawEditorTab(btnStyle, labelStyle); break;
+            case 0: DrawPlayerSettings(); break;
+            case 1: DrawEnemySettings(); break;
+            case 2: DrawFunSettings(); break;
+            case 3: DrawItemSpawner(); break;
+            case 4: DrawObjectEditor(); break;
+            case 5: DrawMenuManager(); break;
         }
 
         GUILayout.EndScrollView();
-        GUILayout.FlexibleSpace();
-        
-        GUI.backgroundColor = new Color(0.8f, 0.2f, 0.2f);
-        if (GUILayout.Button("CLOSE X", btnStyle))
-        {
-            showMenu = false;
-            if (playerController) playerController.canControl = true;
-        }
-        GUI.DragWindow();
+        GUILayout.EndVertical();
+        GUILayout.EndHorizontal();
+
+        GUI.DragWindow(new Rect(0, 0, windowRect.width, 40));
     }
 
-    // --- TABS IMPL ---
-    void DrawMainTab(GUIStyle btnStyle, GUIStyle labelStyle)
+    void DrawStepper(string label, ref float value, float step, float min, float max, string format = "F1")
     {
-        GUI.backgroundColor = godMode ? Color.green : Color.white;
-        if (GUILayout.Button($"God Mode: {(godMode ? "ON" : "OFF")}", btnStyle)) godMode = !godMode;
-
-        GUI.backgroundColor = flyMode ? Color.green : Color.white;
-        if (GUILayout.Button($"NoClip: {(flyMode ? "ON" : "OFF")}", btnStyle))
-        {
-            flyMode = !flyMode;
-            if (playerController) playerController.isFly = flyMode;
-        }
-
-        GUI.backgroundColor = flyUpMode ? Color.cyan : Color.white;
-        if (GUILayout.Button($"FLY UP: {(flyUpMode ? "ACTIVE" : "OFF")}", btnStyle)) flyUpMode = !flyUpMode;
-
-        GUI.backgroundColor = espEnabled ? Color.green : Color.white;
-        if (GUILayout.Button($"ESP: {(espEnabled ? "ON" : "OFF")}", btnStyle)) espEnabled = !espEnabled;
-
-        GUI.backgroundColor = invisibleMode ? Color.green : Color.white;
-        if (GUILayout.Button($"Invisibility: {(invisibleMode ? "ON" : "OFF")}", btnStyle)) { invisibleMode = !invisibleMode; UpdateEnemyVision(); }
-
-        GUI.backgroundColor = Color.white;
-        GUILayout.Space(10);
-        GUILayout.Label($"UI Opacity: {uiOpacity:F1}", labelStyle);
-        uiOpacity = GUILayout.HorizontalSlider(uiOpacity, 0f, 1f);
-
-        GUILayout.Space(5);
-        GUI.backgroundColor = freezeEnemy ? Color.green : Color.white;
-        if (GUILayout.Button($"Freeze AI: {(freezeEnemy ? "ON" : "OFF")}", btnStyle)) { freezeEnemy = !freezeEnemy; UpdateEnemyFreeze(); }
-
-        GUI.backgroundColor = muteEnemyAudio ? Color.red : Color.white;
-        if (GUILayout.Button($"Mute Audio: {(muteEnemyAudio ? "MUTED" : "ON")}", btnStyle)) muteEnemyAudio = !muteEnemyAudio;
-        GUI.backgroundColor = Color.white;
+        GUILayout.BeginHorizontal();
+        GUILayout.Label($"{label}: {value.ToString(format)}", textStyle, GUILayout.Width(110));
+        if (GUILayout.Button("-", btnStyle, GUILayout.Width(25))) value = Mathf.Max(min, value - step);
+        if (GUILayout.Button("+", btnStyle, GUILayout.Width(25))) value = Mathf.Min(max, value + step);
+        GUILayout.EndHorizontal();
     }
 
-    void DrawStatsTab(GUIStyle btnStyle, GUIStyle labelStyle)
+    void DrawGridButton(string text, ref bool state, float width = 160)
     {
-        GUILayout.Label("--- PLAYER ---", labelStyle);
-        GUILayout.Label($"Walk Speed: {customWalkSpeed:F1}", labelStyle);
-        float oldSpeed = customWalkSpeed;
-        customWalkSpeed = GUILayout.HorizontalSlider(customWalkSpeed, 1f, 30f);
+        string label = $"{text}: {(state ? "ON" : "OFF")}";
+        if (GUILayout.Button(label, btnStyle, GUILayout.Width(width))) state = !state;
+    }
+
+    // --- ВКЛАДКИ ---
+
+    void DrawPlayerSettings()
+    {
+        GUILayout.BeginHorizontal();
+        DrawGridButton("God Mode", ref godMode);
+        float oldSpeed = customWalkSpeed; DrawStepper("Speed", ref customWalkSpeed, 1f, 1f, 30f);
         if (oldSpeed != customWalkSpeed && playerController) { playerController.walkSpeed = customWalkSpeed; playerController.runSpeed = customWalkSpeed * 1.8f; }
-
-        GUILayout.Label($"Jump Force: {customJumpForce:F1}", labelStyle);
-        float oldJump = customJumpForce;
-        customJumpForce = GUILayout.HorizontalSlider(customJumpForce, 1f, 30f);
-        if (oldJump != customJumpForce && playerController) playerController.jumpForce = customJumpForce;
-
-        GUILayout.Space(10);
-        GUILayout.Label("--- ENEMY ---", labelStyle);
-        GUILayout.Label($"Height: {customEnemyHeight:F1}x", labelStyle);
-        customEnemyHeight = GUILayout.HorizontalSlider(customEnemyHeight, 0.1f, 5.0f);
-        GUILayout.Label($"Width: {customEnemyWidth:F1}x", labelStyle);
-        customEnemyWidth = GUILayout.HorizontalSlider(customEnemyWidth, 0.1f, 5.0f);
-        GUILayout.Label($"Enemy Speed: {customEnemySpeed:F1}", labelStyle);
-        customEnemySpeed = GUILayout.HorizontalSlider(customEnemySpeed, 0f, 25f); 
-
-        GUILayout.Space(10);
-        if (GUILayout.Button("Reset Defaults", btnStyle))
-        {
-            customWalkSpeed = 6.0f; customJumpForce = 8.0f;
-            customEnemyHeight = 1.0f; customEnemyWidth = 1.0f;
-            customEnemySpeed = 6.0f; customFOV = 90f; uiOpacity = 1.0f;
-            if(playerController) { playerController.walkSpeed = 6f; playerController.runSpeed = 11f; playerController.jumpForce = 8f; }
-        }
-    }
-
-    void DrawFunTab(GUIStyle btnStyle, GUIStyle labelStyle)
-    {
-        GUILayout.Label("--- SCREEN TEXT ---", labelStyle);
-        customScreenText = GUILayout.TextField(customScreenText, 50);
-        GUI.backgroundColor = showScreenText ? Color.green : Color.white;
-        if (GUILayout.Button($"Show Text: {(showScreenText ? "YES" : "NO")}", btnStyle)) showScreenText = !showScreenText;
-        GUI.backgroundColor = Color.white;
-
-        GUILayout.Space(15);
-        GUILayout.Label("--- FUN ZONE ---", labelStyle);
-        GUI.backgroundColor = wideMode ? Color.cyan : Color.white;
-        if (GUILayout.Button($"Wide Mode: {(wideMode ? "ON" : "OFF")}", btnStyle)) wideMode = !wideMode;
-        GUI.backgroundColor = spinBotMode ? Color.cyan : Color.white;
-        if (GUILayout.Button($"SPINBOT Enemy: {(spinBotMode ? "ON" : "OFF")}", btnStyle)) spinBotMode = !spinBotMode;
-        GUI.backgroundColor = upsideDownCamera ? Color.cyan : Color.white;
-        if (GUILayout.Button($"Upside Down Cam: {(upsideDownCamera ? "ON" : "OFF")}", btnStyle)) upsideDownCamera = !upsideDownCamera;
-        GUI.backgroundColor = Color.white;
-        
-        GUILayout.Space(15);
-        GUILayout.Label("--- TELEPORTS ---", labelStyle);
-        if (GUILayout.Button("TP TO Enemy", btnStyle))
+        if (GUILayout.Button("Teleport To Enemy", btnStyle, GUILayout.Width(160)))
         {
             if (playerController && mainEnemy) {
                 playerController.controller.enabled = false;
@@ -394,404 +425,364 @@ public class ModMenuController : MonoBehaviour
                 playerController.controller.enabled = true;
             }
         }
-        if (GUILayout.Button("TP Enemy HERE", btnStyle))
-        {
-            if (playerController && mainEnemy) mainEnemy.GetComponent<RichAI>().Teleport(playerController.transform.position + playerController.transform.forward * 3f);
-        }
-        GUILayout.Space(10);
-        GUILayout.Label($"FOV: {customFOV:F0}", labelStyle);
-        customFOV = GUILayout.HorizontalSlider(customFOV, 30f, 170f);
-    }
-
-    void DrawSpawnerTab(GUIStyle btnStyle, GUIStyle labelStyle)
-    {
-        GUILayout.Label("--- CLONES ---", labelStyle);
-        if (GUILayout.Button("+ Spawn Clone", btnStyle)) SpawnClone();
-        if (GUILayout.Button("Delete All Clones", btnStyle)) DeleteAllClones();
+        GUILayout.EndHorizontal();
 
         GUILayout.Space(15);
-        GUILayout.Label("--- ORIGINAL ---", labelStyle);
+        GUILayout.BeginHorizontal();
+        bool oldFly = flyMode; DrawGridButton("No Clip", ref flyMode);
+        if (oldFly != flyMode && playerController) playerController.isFly = flyMode;
+        float oldJump = customJumpForce; DrawStepper("Jump Force", ref customJumpForce, 1f, 1f, 30f);
+        if (oldJump != customJumpForce && playerController) playerController.jumpForce = customJumpForce;
+        DrawGridButton("Fly Up", ref flyUpMode);
+        GUILayout.EndHorizontal();
+
+        GUILayout.Space(15);
+        GUILayout.BeginHorizontal();
+        bool oldInvis = invisibleMode; DrawGridButton("Invisibility", ref invisibleMode);
+        if (oldInvis != invisibleMode) UpdateEnemyVision();
+        DrawStepper("Player Size", ref customPlayerScale, 0.5f, 0.1f, 5.0f);
+        DrawGridButton("Moon Gravity", ref lowGravity);
+        GUILayout.EndHorizontal();
+    }
+
+    void DrawEnemySettings()
+    {
+        GUILayout.BeginHorizontal();
+        bool oldFreeze = freezeEnemy; DrawGridButton("Freeze AI", ref freezeEnemy);
+        if (oldFreeze != freezeEnemy) UpdateEnemyFreeze();
+        float oldSpeed = customEnemySpeed; DrawStepper("Enemy Speed", ref customEnemySpeed, 1f, 0f, 25f);
+        if (oldSpeed != customEnemySpeed) 
+        {
+            foreach(var e in FindObjectsByType<node_AIMovement>(FindObjectsSortMode.None)) 
+                if (e != null) e.speedSettings.chaseSpeed = customEnemySpeed;
+        }
+        if (GUILayout.Button("Teleport Enemy Here", btnStyle, GUILayout.Width(160)))
+        {
+            if (playerController && mainEnemy) mainEnemy.GetComponent<UnityEngine.AI.NavMeshAgent>().Warp(playerController.transform.position + playerController.transform.forward * 3f);
+        }
+        GUILayout.EndHorizontal();
+
+        GUILayout.Space(15);
+        GUILayout.BeginHorizontal();
+        DrawGridButton("ESP", ref espEnabled);
+        float oldW = customEnemyWidth; float oldH = customEnemyHeight;
+        DrawStepper("Scale Width", ref customEnemyWidth, 0.1f, 0.1f, 5.0f);
+        DrawStepper("Scale Height", ref customEnemyHeight, 0.1f, 0.1f, 5.0f);
+        if (oldW != customEnemyWidth || oldH != customEnemyHeight)
+        {
+            foreach(var e in FindObjectsByType<node_AIMovement>(FindObjectsSortMode.None))
+            {
+                if (e != null && !pancakeMode && !wideMode && !slenderMode)
+                    e.transform.localScale = new Vector3(customEnemyWidth, customEnemyHeight, customEnemyWidth);
+            }
+        }
+        GUILayout.EndHorizontal();
+
+        GUILayout.Space(15);
+        GUILayout.BeginHorizontal();
+        DrawGridButton("SpinBot", ref spinBotMode);
+        DrawGridButton("Wide Mode", ref wideMode);
+        DrawGridButton("Slender Mode", ref slenderMode);
+        GUILayout.EndHorizontal();
+
+        GUILayout.Space(15);
+        GUILayout.BeginHorizontal();
+        DrawGridButton("Pancake Mode", ref pancakeMode);
+        DrawGridButton("Mute Audio", ref muteEnemyAudio);
+        GUI.backgroundColor = new Color(1f, 0.5f, 0.5f);
+        if (GUILayout.Button("LAUNCH TO SPACE!", btnStyle, GUILayout.Width(160))) LaunchEnemiesToSpace();
+        GUI.backgroundColor = Color.white;
+        GUILayout.EndHorizontal();
+
+        GUILayout.Space(15);
+        GUILayout.Label("--- Spawner ---", textStyle);
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("Spawn Clone", btnStyle, GUILayout.Width(160))) SpawnClone();
+        if (GUILayout.Button("Delete All Clones", btnStyle, GUILayout.Width(160))) DeleteAllClones();
         bool isMainActive = mainEnemy != null && mainEnemy.gameObject.activeSelf;
         if (isMainActive) {
-            GUI.backgroundColor = new Color(1f, 0.4f, 0.4f);
-            if (GUILayout.Button("DELETE (Remove)", btnStyle)) if (mainEnemy) mainEnemy.gameObject.SetActive(false);
+            if (GUILayout.Button("Delete Original", btnStyle, GUILayout.Width(160))) if (mainEnemy) mainEnemy.gameObject.SetActive(false);
         } else {
-            GUI.backgroundColor = new Color(0.4f, 1f, 0.4f);
-            if (GUILayout.Button("SPAWN (Restore)", btnStyle)) if (mainEnemy) { mainEnemy.gameObject.SetActive(true); if(playerController) mainEnemy.GetComponent<RichAI>().Teleport(playerController.transform.position + playerController.transform.forward * 5f); }
+            if (GUILayout.Button("Restore Original", btnStyle, GUILayout.Width(160))) if (mainEnemy) { mainEnemy.gameObject.SetActive(true); if(playerController) mainEnemy.GetComponent<UnityEngine.AI.NavMeshAgent>().Warp(playerController.transform.position + playerController.transform.forward * 5f); }
         }
-        GUI.backgroundColor = Color.white;
-    }
-
-    void DrawItemsTab(GUIStyle btnStyle, GUIStyle labelStyle)
-    {
-        GUILayout.Label("--- SPAWN ITEMS ---", labelStyle);
-        if (playerController == null) return;
-
-        if (itemPrefabs.Count > 0) {
-            GUILayout.Label($"Items ({itemPrefabs.Count})", labelStyle);
-            foreach (var prefab in itemPrefabs) if (GUILayout.Button(prefab.name, btnStyle)) SpawnItem(prefab);
-        }
-        if (keyPrefabs.Count > 0) {
-            GUILayout.Space(10);
-            GUI.backgroundColor = Color.yellow;
-            GUILayout.Label($"Keys ({keyPrefabs.Count})", labelStyle);
-            foreach (var prefab in keyPrefabs) if (GUILayout.Button(prefab.name, btnStyle)) SpawnItem(prefab);
-            GUI.backgroundColor = Color.white;
-        }
-        if (meleePrefabs.Count > 0) {
-            GUILayout.Space(10);
-            GUI.backgroundColor = new Color(1f, 0.6f, 0.6f);
-            GUILayout.Label($"Melee ({meleePrefabs.Count})", labelStyle);
-            foreach (var prefab in meleePrefabs) if (GUILayout.Button(prefab.name, btnStyle)) SpawnItem(prefab);
-            GUI.backgroundColor = Color.white;
-        }
-        if (gunPrefabs.Count > 0) {
-            GUILayout.Space(10);
-            GUI.backgroundColor = new Color(0.6f, 0.6f, 1f);
-            GUILayout.Label($"Guns ({gunPrefabs.Count})", labelStyle);
-            foreach (var prefab in gunPrefabs) if (GUILayout.Button(prefab.name, btnStyle)) SpawnItem(prefab);
-            GUI.backgroundColor = Color.white;
-        }
-    }
-
-    void DrawEditorTab(GUIStyle btnStyle, GUIStyle labelStyle)
-    {
-        GUILayout.Label("--- MAP SAVE/LOAD SYSTEM ---", labelStyle);
-        GUILayout.Label("File Name:", labelStyle);
-        saveFileName = GUILayout.TextField(saveFileName);
-
-        GUILayout.BeginHorizontal();
-        if (GUILayout.Button("SAVE MAP", btnStyle)) SaveMap();
-        if (GUILayout.Button("LOAD MAP", btnStyle)) LoadMap();
         GUILayout.EndHorizontal();
+    }
 
-        if(!string.IsNullOrEmpty(lastSaveMessage))
-            GUILayout.Label(lastSaveMessage, new GUIStyle(labelStyle){fontSize = 14, normal = {textColor = Color.yellow}});
+    void DrawFunSettings()
+    {
+        GUILayout.BeginHorizontal();
+        DrawStepper("Time Scale", ref customTimeScale, 0.1f, 0.1f, 3.0f, "F1");
+        DrawStepper("FOV", ref customFOV, 5f, 30f, 170f, "F0");
+        if (GUILayout.Button("Gotta Go Fast!", btnStyle, GUILayout.Width(160))) EnableSonicMode();
+        GUILayout.EndHorizontal();
 
         GUILayout.Space(15);
-        GUILayout.Label("--- SPAWN SHAPES ---", labelStyle);
-
-        // 1. Кнопки спавна разных форм
+        GUILayout.Label("--- Camera Memes ---", textStyle);
         GUILayout.BeginHorizontal();
-        if (GUILayout.Button("Cube", btnStyle)) SpawnPrimitive(PrimitiveType.Cube, "Cube");
-        if (GUILayout.Button("Sphere", btnStyle)) SpawnPrimitive(PrimitiveType.Sphere, "Sphere");
+        DrawGridButton("Upside Down Cam", ref upsideDownCamera);
+        DrawGridButton("Drunk Camera", ref drunkMode);
+        DrawGridButton("Acid Mode (FOV)", ref acidMode);
         GUILayout.EndHorizontal();
 
+        GUILayout.Space(15);
         GUILayout.BeginHorizontal();
-        if (GUILayout.Button("Capsule", btnStyle)) SpawnPrimitive(PrimitiveType.Capsule, "Capsule");
-        if (GUILayout.Button("Cylinder", btnStyle)) SpawnPrimitive(PrimitiveType.Cylinder, "Cylinder");
+        DrawGridButton("Earthquake", ref earthquakeMode);
+        DrawGridButton("Disco Lighting", ref discoMode);
+        if (GUILayout.Button("Reset Camera", btnStyle, GUILayout.Width(150))) ResetCamera();
         GUILayout.EndHorizontal();
-        
-        if (GUILayout.Button("Plane (Floor)", btnStyle)) SpawnPrimitive(PrimitiveType.Plane, "Plane");
 
-        GUILayout.Space(10);
-
-        GameObject target = isObjectLocked ? lockedObject : currentHitObject;
-
-        if (target == null)
-        {
-            GUILayout.Label("Look at an object to select it...", labelStyle);
-            return;
-        }
-
-        string status = isObjectLocked ? $"LOCKED: {target.name}" : $"LOOKING AT: {target.name}";
-        GUI.backgroundColor = isObjectLocked ? Color.green : Color.yellow;
-        if (GUILayout.Button(status, btnStyle))
-        {
-            if (isObjectLocked) { isObjectLocked = false; lockedObject = null; }
-            else { isObjectLocked = true; lockedObject = currentHitObject; }
-        }
+        GUILayout.Space(15);
+        GUILayout.Label("--- World Physics Memes ---", textStyle);
+        GUILayout.BeginHorizontal();
+        GUI.backgroundColor = new Color(0.5f, 1f, 0.5f);
+        if (GUILayout.Button("Rain Items!", btnStyle, GUILayout.Width(160))) RainItems();
+        GUI.backgroundColor = new Color(1f, 0.6f, 0.2f);
+        if (GUILayout.Button("Yeet All Physics!", btnStyle, GUILayout.Width(160))) YeetPhysics();
         GUI.backgroundColor = Color.white;
-        GUILayout.Space(10);
+        GUILayout.EndHorizontal();
+
+        GUILayout.Space(15);
+        GUILayout.BeginHorizontal();
+        DrawGridButton("Show Screen Text", ref showScreenText);
+        GUILayout.Label("Text:", textStyle, GUILayout.Width(40));
+        customScreenText = GUILayout.TextField(customScreenText, 30, GUILayout.Width(150));
+        GUILayout.EndHorizontal();
+    }
+
+    void DrawItemSpawner()
+    {
+        if (playerController == null) { GUILayout.Label("Player not found", textStyle); return; }
+        DrawItemCategory("Items", itemPrefabs);
+        DrawItemCategory("Keys", keyPrefabs);
+        DrawItemCategory("Melee", meleePrefabs);
+        DrawItemCategory("Guns", gunPrefabs);
+    }
+
+    void DrawItemCategory(string title, List<GameObject> list)
+    {
+        if (list.Count == 0) return;
+        GUILayout.Label($"--- {title} ---", textStyle);
+        GUILayout.BeginHorizontal();
+        int count = 0;
+        foreach (var prefab in list)
+        {
+            if (GUILayout.Button(prefab.name, btnStyle, GUILayout.Width(150), GUILayout.Height(30))) SpawnItem(prefab);
+            count++;
+            if (count % 4 == 0) { GUILayout.EndHorizontal(); GUILayout.BeginHorizontal(); }
+        }
+        GUILayout.EndHorizontal(); GUILayout.Space(10);
+    }
+
+    void DrawObjectEditor()
+    {
+        GUILayout.Label("Spawn Shapes:", textStyle);
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("Cube", btnStyle, GUILayout.Width(80))) SpawnPrimitive(PrimitiveType.Cube, "Cube");
+        if (GUILayout.Button("Sphere", btnStyle, GUILayout.Width(80))) SpawnPrimitive(PrimitiveType.Sphere, "Sphere");
+        if (GUILayout.Button("Capsule", btnStyle, GUILayout.Width(80))) SpawnPrimitive(PrimitiveType.Capsule, "Capsule");
+        if (GUILayout.Button("Cylinder", btnStyle, GUILayout.Width(80))) SpawnPrimitive(PrimitiveType.Cylinder, "Cylinder");
+        if (GUILayout.Button("Plane", btnStyle, GUILayout.Width(80))) SpawnPrimitive(PrimitiveType.Plane, "Plane");
+        GUILayout.EndHorizontal();
+
+        GUILayout.Space(15);
+        GameObject target = isObjectLocked ? lockedObject : currentHitObject;
+        string status = target == null ? "Look at an object to select..." : (isObjectLocked ? $"LOCKED: {target.name}" : $"LOOKING AT: {target.name}");
+        
+        if (GUILayout.Button(status, btnStyle, GUILayout.Width(300)))
+            if (target != null) { isObjectLocked = !isObjectLocked; lockedObject = isObjectLocked ? currentHitObject : null; }
 
         if (isObjectLocked && lockedObject != null)
         {
-            // 2. Цвета
-            GUILayout.Label("--- COLOR ---", labelStyle);
+            GUILayout.Space(10);
             GUILayout.BeginHorizontal();
-            GUI.backgroundColor = Color.white; if(GUILayout.Button("W", btnStyle)) ChangeObjectColor(Color.white);
-            GUI.backgroundColor = Color.red; if(GUILayout.Button("R", btnStyle)) ChangeObjectColor(Color.red);
-            GUI.backgroundColor = Color.green; if(GUILayout.Button("G", btnStyle)) ChangeObjectColor(Color.green);
-            GUI.backgroundColor = Color.blue; if(GUILayout.Button("B", btnStyle)) ChangeObjectColor(Color.blue);
-            GUI.backgroundColor = Color.black; if(GUILayout.Button("Bk", btnStyle)) ChangeObjectColor(Color.black);
-            GUI.backgroundColor = Color.gray; if(GUILayout.Button("Gy", btnStyle)) ChangeObjectColor(Color.gray);
+            GUILayout.Label("Colors:", textStyle, GUILayout.Width(60));
+            if(GUILayout.Button("White", btnStyle, GUILayout.Width(50))) ChangeObjectColor(Color.white);
+            if(GUILayout.Button("Red", btnStyle, GUILayout.Width(40))) ChangeObjectColor(Color.red);
+            if(GUILayout.Button("Green", btnStyle, GUILayout.Width(50))) ChangeObjectColor(Color.green);
+            if(GUILayout.Button("Blue", btnStyle, GUILayout.Width(40))) ChangeObjectColor(Color.blue);
+            if(GUILayout.Button("Black", btnStyle, GUILayout.Width(50))) ChangeObjectColor(Color.black);
+            if (GUILayout.Button("TP To Me", btnStyle, GUILayout.Width(80))) TeleportObjectToPlayer();
             GUILayout.EndHorizontal();
-            GUI.backgroundColor = Color.white;
 
-            // 3. Телепорт объекта к игроку
+            GUILayout.Space(10);
+            GUILayout.BeginHorizontal();
+            DrawStepper("Move Step", ref editorMoveStep, 0.5f, 0.1f, 5.0f);
+            DrawStepper("Rot Step", ref editorRotStep, 15f, 1f, 90f, "F0");
+            DrawStepper("Scale Step", ref editorScaleStep, 0.5f, 0.1f, 5.0f);
+            GUILayout.EndHorizontal();
+
             GUILayout.Space(5);
-            if (GUILayout.Button("TP Object TO ME", btnStyle)) TeleportObjectToPlayer();
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Pos X-", btnStyle, GUILayout.Width(60))) lockedObject.transform.position += Vector3.left * editorMoveStep;
+            if (GUILayout.Button("Pos X+", btnStyle, GUILayout.Width(60))) lockedObject.transform.position += Vector3.right * editorMoveStep;
+            if (GUILayout.Button("Pos Y-", btnStyle, GUILayout.Width(60))) lockedObject.transform.position += Vector3.down * editorMoveStep;
+            if (GUILayout.Button("Pos Y+", btnStyle, GUILayout.Width(60))) lockedObject.transform.position += Vector3.up * editorMoveStep;
+            if (GUILayout.Button("Pos Z-", btnStyle, GUILayout.Width(60))) lockedObject.transform.position += Vector3.back * editorMoveStep;
+            if (GUILayout.Button("Pos Z+", btnStyle, GUILayout.Width(60))) lockedObject.transform.position += Vector3.forward * editorMoveStep;
+            GUILayout.EndHorizontal();
 
-            GUILayout.Space(10);
-            // Трансформация (без изменений)
-            GUILayout.Label($"Move Step: {editorMoveStep:F1}", labelStyle);
-            editorMoveStep = GUILayout.HorizontalSlider(editorMoveStep, 0.1f, 5.0f);
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Rot P-", btnStyle, GUILayout.Width(60))) lockedObject.transform.Rotate(-editorRotStep, 0, 0);
+            if (GUILayout.Button("Rot P+", btnStyle, GUILayout.Width(60))) lockedObject.transform.Rotate(editorRotStep, 0, 0);
+            if (GUILayout.Button("Rot Y-", btnStyle, GUILayout.Width(60))) lockedObject.transform.Rotate(0, -editorRotStep, 0);
+            if (GUILayout.Button("Rot Y+", btnStyle, GUILayout.Width(60))) lockedObject.transform.Rotate(0, editorRotStep, 0);
             
-            GUILayout.Label($"Rot Step: {editorRotStep:F0}", labelStyle);
-            editorRotStep = GUILayout.HorizontalSlider(editorRotStep, 1f, 90f);
-
-            GUILayout.Label($"Scale Step: {editorScaleStep:F1}", labelStyle);
-            editorScaleStep = GUILayout.HorizontalSlider(editorScaleStep, 0.1f, 2.0f);
-
-            GUILayout.Label("--- POSITION ---", labelStyle);
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("X-", btnStyle)) lockedObject.transform.position += Vector3.left * editorMoveStep;
-            if (GUILayout.Button("X+", btnStyle)) lockedObject.transform.position += Vector3.right * editorMoveStep;
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Y-", btnStyle)) lockedObject.transform.position += Vector3.down * editorMoveStep;
-            if (GUILayout.Button("Y+", btnStyle)) lockedObject.transform.position += Vector3.up * editorMoveStep;
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Z-", btnStyle)) lockedObject.transform.position += Vector3.back * editorMoveStep;
-            if (GUILayout.Button("Z+", btnStyle)) lockedObject.transform.position += Vector3.forward * editorMoveStep;
-            GUILayout.EndHorizontal();
-
-            GUILayout.Label("--- ROTATION ---", labelStyle);
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button($"P-", btnStyle)) lockedObject.transform.Rotate(-editorRotStep, 0, 0);
-            if (GUILayout.Button($"P+", btnStyle)) lockedObject.transform.Rotate(editorRotStep, 0, 0);
-            if (GUILayout.Button($"Y-", btnStyle)) lockedObject.transform.Rotate(0, -editorRotStep, 0);
-            if (GUILayout.Button($"Y+", btnStyle)) lockedObject.transform.Rotate(0, editorRotStep, 0);
-            GUILayout.EndHorizontal();
-
-            GUILayout.Label("--- SCALE ---", labelStyle);
             Vector3 s = lockedObject.transform.localScale;
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("X-", btnStyle)) lockedObject.transform.localScale = new Vector3(s.x - editorScaleStep, s.y, s.z);
-            if (GUILayout.Button("X+", btnStyle)) lockedObject.transform.localScale = new Vector3(s.x + editorScaleStep, s.y, s.z);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Y-", btnStyle)) lockedObject.transform.localScale = new Vector3(s.x, s.y - editorScaleStep, s.z);
-            if (GUILayout.Button("Y+", btnStyle)) lockedObject.transform.localScale = new Vector3(s.x, s.y + editorScaleStep, s.z);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Z-", btnStyle)) lockedObject.transform.localScale = new Vector3(s.x, s.y, s.z - editorScaleStep);
-            if (GUILayout.Button("Z+", btnStyle)) lockedObject.transform.localScale = new Vector3(s.x, s.y, s.z + editorScaleStep);
+            if (GUILayout.Button("Scl X-", btnStyle, GUILayout.Width(60))) lockedObject.transform.localScale = new Vector3(s.x - editorScaleStep, s.y, s.z);
+            if (GUILayout.Button("Scl X+", btnStyle, GUILayout.Width(60))) lockedObject.transform.localScale = new Vector3(s.x + editorScaleStep, s.y, s.z);
             GUILayout.EndHorizontal();
 
             GUILayout.Space(10);
+            GUILayout.BeginHorizontal();
             Rigidbody rb = lockedObject.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                string physText = rb.isKinematic ? "Physics: OFF" : "Physics: ON";
-                GUI.backgroundColor = rb.isKinematic ? Color.gray : Color.cyan;
-                if (GUILayout.Button(physText, btnStyle)) rb.isKinematic = !rb.isKinematic;
-                GUI.backgroundColor = Color.white;
-            }
-
-            GUI.backgroundColor = Color.red;
-            if (GUILayout.Button("DELETE OBJECT", btnStyle))
-            {
-                Destroy(lockedObject);
-                isObjectLocked = false;
-                lockedObject = null;
-            }
-            GUI.backgroundColor = Color.white;
+            if (rb != null) if (GUILayout.Button(rb.isKinematic ? "Physics: OFF" : "Physics: ON", btnStyle, GUILayout.Width(150))) rb.isKinematic = !rb.isKinematic;
+            if (GUILayout.Button("DELETE OBJECT", btnStyle, GUILayout.Width(150))) { Destroy(lockedObject); isObjectLocked = false; lockedObject = null; }
+            GUILayout.EndHorizontal();
         }
     }
 
-    // --- EDITOR LOGIC ---
+    void DrawMenuManager()
+    {
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("Menu Title Text:", textStyle, GUILayout.Width(120));
+        menuTitle = GUILayout.TextField(menuTitle, GUILayout.Width(300));
+        GUILayout.EndHorizontal();
 
-    // 1. Улучшенный спавн примитивов с МАТЕРИАЛОМ
+        GUILayout.Space(20);
+        DrawStepper("UI Opacity", ref uiOpacity, 0.1f, 0f, 1f);
+        
+        GUILayout.Space(20);
+        GUILayout.Label("Background Color Presets:", textStyle);
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("Dark Blue", btnStyle, GUILayout.Width(100))) ChangeBgColor(new Color(0.07f, 0.05f, 0.15f, 0.95f));
+        if (GUILayout.Button("Black", btnStyle, GUILayout.Width(100))) ChangeBgColor(new Color(0f, 0f, 0f, 0.95f));
+        if (GUILayout.Button("Dark Red", btnStyle, GUILayout.Width(100))) ChangeBgColor(new Color(0.15f, 0.02f, 0.02f, 0.95f));
+        if (GUILayout.Button("Dark Green", btnStyle, GUILayout.Width(100))) ChangeBgColor(new Color(0.02f, 0.15f, 0.02f, 0.95f));
+        if (GUILayout.Button("Pink", btnStyle, GUILayout.Width(100))) ChangeBgColor(new Color(0.2f, 0.05f, 0.15f, 0.95f));
+        GUILayout.EndHorizontal();
+    }
+
+    // --- EDITOR LOGIC & HELPERS ---
     void SpawnPrimitive(PrimitiveType type, string typeName)
     {
         if (playerController == null) return;
         GameObject obj = GameObject.CreatePrimitive(type);
         obj.name = $"Editor_{typeName}_{UnityEngine.Random.Range(100,999)}";
         obj.transform.position = playerController.transform.position + playerController.transform.forward * 3f + Vector3.up * 1f;
-        
-        // --- ВАЖНО: Применяем материал ---
         Renderer r = obj.GetComponent<Renderer>();
-        if (buildingMaterial != null && r != null)
-        {
-            r.material = new Material(buildingMaterial); // Создаем копию, чтобы красить объекты по отдельности
-        }
-        // ---------------------------------
-
-        Rigidbody rb = obj.AddComponent<Rigidbody>();
-        rb.isKinematic = true; 
+        if (buildingMaterial != null && r != null) r.material = new Material(buildingMaterial);
+        Rigidbody rb = obj.AddComponent<Rigidbody>(); rb.isKinematic = true; 
     }
+    void ChangeObjectColor(Color c) { if (lockedObject != null) { Renderer r = lockedObject.GetComponent<Renderer>(); if (r != null) r.material.color = c; } }
+    void TeleportObjectToPlayer() { if (lockedObject != null && playerController != null) lockedObject.transform.position = playerController.transform.position + playerController.transform.forward * 2f; }
+    void SpawnItem(GameObject prefab) { if (playerController == null || prefab == null) return; Vector3 pos = playerController.transform.position + playerController.transform.forward * 1.5f + Vector3.up * 1.0f; GameObject obj = Instantiate(prefab, pos, Quaternion.identity); Rigidbody rb = obj.GetComponent<Rigidbody>(); if (rb != null) { rb.isKinematic = false; rb.AddForce(playerController.transform.forward * 2f, ForceMode.Impulse); } }
+    
+    void SpawnClone() 
+    { 
+        if (enemyPrefabTemplate) 
+        { 
+            Vector3 spawnPos = Vector3.zero;
+            if (mainEnemy != null && mainEnemy.gameObject.activeInHierarchy) spawnPos = mainEnemy.transform.position + mainEnemy.transform.forward * 3f;
+            else if (playerController != null) spawnPos = playerController.transform.position + playerController.transform.forward * 3f;
+            else return;
 
-    // 2. Смена цвета
-    void ChangeObjectColor(Color c)
-    {
-        if (lockedObject != null)
-        {
-            Renderer r = lockedObject.GetComponent<Renderer>();
-            if (r != null) r.material.color = c;
-        }
-    }
-
-    // 3. Телепорт объекта к игроку
-    void TeleportObjectToPlayer()
-    {
-        if (lockedObject != null && playerController != null)
-        {
-            lockedObject.transform.position = playerController.transform.position + playerController.transform.forward * 2f;
-        }
-    }
-
-    // --- SAVE / LOAD SYSTEM ---
-
-    private string GetSavePath()
-    {
-        string folderName = "ModMaps";
-        string path = "";
-
-#if UNITY_ANDROID && !UNITY_EDITOR
-        path = System.IO.Path.Combine("/storage/emulated/0/Download", folderName);
-#else
-        path = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments), folderName);
-#endif
-
-        if (!Directory.Exists(path))
-        {
-            try {
-                Directory.CreateDirectory(path);
-            } catch {
-                path = System.IO.Path.Combine(Application.persistentDataPath, folderName);
-                if (!Directory.Exists(path)) Directory.CreateDirectory(path);
-            }
-        }
-        
-        return path;
-    }
-
-    public void SaveMap()
-    {
-        if(string.IsNullOrEmpty(saveFileName)) saveFileName = "map_default";
-
-        MapData data = new MapData();
-        
-        GameObject[] allObjects = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
-        foreach(var go in allObjects)
-        {
-            if(go.name.StartsWith("Editor_"))
+            GameObject clone;
+            UnityEngine.AI.NavMeshHit hit;
+            if (UnityEngine.AI.NavMesh.SamplePosition(spawnPos, out hit, 5.0f, UnityEngine.AI.NavMesh.AllAreas))
             {
-                SavedObject so = new SavedObject();
-                so.name = go.name;
-                
-                if(go.name.Contains("Cube")) so.type = PrimitiveType.Cube;
-                else if(go.name.Contains("Sphere")) so.type = PrimitiveType.Sphere;
-                else if(go.name.Contains("Capsule")) so.type = PrimitiveType.Capsule;
-                else if(go.name.Contains("Cylinder")) so.type = PrimitiveType.Cylinder;
-                else if(go.name.Contains("Plane")) so.type = PrimitiveType.Plane;
-                else so.type = PrimitiveType.Cube; 
-
-                so.position = go.transform.position;
-                so.rotation = go.transform.rotation;
-                so.scale = go.transform.localScale;
-                
-                Renderer r = go.GetComponent<Renderer>();
-                so.color = (r != null) ? r.material.color : Color.white;
-                
-                Rigidbody rb = go.GetComponent<Rigidbody>();
-                so.isKinematic = (rb != null) ? rb.isKinematic : true;
-
-                data.objects.Add(so);
+                clone = Instantiate(enemyPrefabTemplate, hit.position, Quaternion.identity); clone.SetActive(true);
+                var agent = clone.GetComponent<UnityEngine.AI.NavMeshAgent>(); if (agent != null) agent.Warp(hit.position); 
             }
-        }
-
-        string json = JsonUtility.ToJson(data, true);
-        string fullPath = System.IO.Path.Combine(GetSavePath(), saveFileName + ".json");
-        
-        try {
-            File.WriteAllText(fullPath, json);
-            lastSaveMessage = $"Saved to: {fullPath}";
-        } catch (Exception e) {
-            lastSaveMessage = $"Error: {e.Message}";
-        }
-    }
-
-    public void LoadMap()
-    {
-        string fullPath = System.IO.Path.Combine(GetSavePath(), saveFileName + ".json");
-        if(!File.Exists(fullPath))
-        {
-            lastSaveMessage = "File not found!";
-            return;
-        }
-
-        GameObject[] allObjects = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
-        foreach (var go in allObjects)
-        {
-            if (go.name.StartsWith("Editor_")) Destroy(go);
-        }
-
-        try {
-            string json = File.ReadAllText(fullPath);
-            MapData data = JsonUtility.FromJson<MapData>(json);
-
-            foreach(var so in data.objects)
+            else 
             {
-                GameObject obj = GameObject.CreatePrimitive(so.type);
-                obj.name = so.name;
-                obj.transform.position = so.position;
-                obj.transform.rotation = so.rotation;
-                obj.transform.localScale = so.scale;
-
-                // --- ВАЖНО: Применяем материал при загрузке ---
-                Renderer r = obj.GetComponent<Renderer>();
-                if (r != null) 
-                {
-                    if (buildingMaterial != null)
-                        r.material = new Material(buildingMaterial);
-                    
-                    r.material.color = so.color; // Красим
-                }
-                // ----------------------------------------------
-
-                Rigidbody rb = obj.AddComponent<Rigidbody>();
-                rb.isKinematic = so.isKinematic;
+                clone = Instantiate(enemyPrefabTemplate, spawnPos, Quaternion.identity); clone.SetActive(true);
             }
-            lastSaveMessage = $"Loaded: {data.objects.Count} objects.";
-        } catch (Exception e) {
-            lastSaveMessage = $"Load Error: {e.Message}";
+
+            var ai = clone.GetComponent<node_AIMovement>();
+            if (ai != null)
+            {
+                ai.speedSettings.chaseSpeed = customEnemySpeed;
+                if (!pancakeMode && !wideMode && !slenderMode) ai.transform.localScale = new Vector3(customEnemyWidth, customEnemyHeight, customEnemyWidth);
+            }
+        } 
+    }
+
+    void DeleteAllClones() { var all = FindObjectsByType<node_AIMovement>(FindObjectsSortMode.None); foreach (var e in all) if (e != mainEnemy) Destroy(e.gameObject); }
+    void UpdateEnemyVision() { foreach (var e in FindObjectsByType<node_AIMovement>(FindObjectsSortMode.None)) { e.detectionSettings.normalVisionDistance = invisibleMode ? 0f : 40f; e.detectionSettings.pursueVisionDistance = invisibleMode ? 0f : 100f; e.detectionSettings.visionDistance = invisibleMode ? 0f : 40f; } }
+    void UpdateEnemyFreeze() { foreach (var e in FindObjectsByType<node_AIMovement>(FindObjectsSortMode.None)) { var agent = e.GetComponent<UnityEngine.AI.NavMeshAgent>(); if(agent) agent.isStopped = freezeEnemy; e.enabled = !freezeEnemy; } }
+    
+    // --- MEME FUNCTIONS ---
+    void EnableSonicMode()
+    {
+        customWalkSpeed = 50f;
+        customJumpForce = 25f;
+        customFOV = 130f;
+        if (playerController) { playerController.walkSpeed = 50f; playerController.runSpeed = 80f; playerController.jumpForce = 25f; }
+    }
+
+    void RainItems()
+    {
+        if (playerController == null) return;
+        List<GameObject> allItems = new List<GameObject>();
+        allItems.AddRange(itemPrefabs); allItems.AddRange(keyPrefabs); allItems.AddRange(meleePrefabs); allItems.AddRange(gunPrefabs);
+        if (allItems.Count == 0) return;
+
+        for (int i = 0; i < 30; i++)
+        {
+            GameObject randomPrefab = allItems[UnityEngine.Random.Range(0, allItems.Count)];
+            Vector3 spawnPos = playerController.transform.position + Vector3.up * 15f + (Vector3)UnityEngine.Random.insideUnitCircle * 10f;
+            GameObject obj = Instantiate(randomPrefab, spawnPos, Quaternion.identity);
+            Rigidbody rb = obj.GetComponent<Rigidbody>();
+            if (rb != null) { rb.isKinematic = false; rb.velocity = UnityEngine.Random.insideUnitSphere * 2f; }
         }
     }
 
-    // HELPERS
-    void SpawnItem(GameObject prefab)
+    void YeetPhysics()
     {
-        if (playerController == null || prefab == null) return;
-        Vector3 pos = playerController.transform.position + playerController.transform.forward * 1.5f + Vector3.up * 1.0f;
-        GameObject obj = Instantiate(prefab, pos, Quaternion.identity);
-        Rigidbody rb = obj.GetComponent<Rigidbody>();
-        if (rb != null) { rb.isKinematic = false; rb.AddForce(playerController.transform.forward * 2f, ForceMode.Impulse); }
+        Rigidbody[] rbs = FindObjectsByType<Rigidbody>(FindObjectsSortMode.None);
+        Vector3 origin = playerController != null ? playerController.transform.position : Vector3.zero;
+        foreach (var rb in rbs)
+        {
+            if (rb.gameObject == playerController?.gameObject) continue; // Игрока не трогаем
+            if (rb.isKinematic) rb.isKinematic = false;
+            rb.AddExplosionForce(5000f, origin, 100f, 10f); // Сильный отлет + вверх
+            rb.AddTorque(UnityEngine.Random.insideUnitSphere * 100f, ForceMode.VelocityChange); // Раскрутка
+        }
     }
-    void SpawnClone() { if (enemyPrefabTemplate && playerController) { Vector3 pos = playerController.transform.position + playerController.transform.forward * 3f + Vector3.up; Instantiate(enemyPrefabTemplate, pos, Quaternion.identity).SetActive(true); } }
-    void DeleteAllClones() { var all = FindObjectsByType<RichAI_EnemyController>(FindObjectsSortMode.None); foreach (var e in all) if (e != mainEnemy) Destroy(e.gameObject); }
-    void UpdateEnemyVision() { foreach (var e in FindObjectsByType<RichAI_EnemyController>(FindObjectsSortMode.None)) e.detectionRange = invisibleMode ? 0f : 30f; }
-    void UpdateEnemyFreeze() { foreach (var e in FindObjectsByType<RichAI_EnemyController>(FindObjectsSortMode.None)) { var ai = e.GetComponent<RichAI>(); if(ai) ai.enabled = !freezeEnemy; e.enabled = !freezeEnemy; } }
 
-    void DrawAllEnemiesESP() { foreach (var enemy in FindObjectsByType<RichAI_EnemyController>(FindObjectsSortMode.None)) { if (enemy && enemy.gameObject.activeSelf) DrawBoxESP(enemy.transform); } }
-    void DrawBoxESP(Transform t) {
+    void LaunchEnemiesToSpace()
+    {
+        foreach (var enemy in FindObjectsByType<node_AIMovement>(FindObjectsSortMode.None))
+        {
+            if (enemy == null || !enemy.gameObject.activeSelf) continue;
+            var agent = enemy.GetComponent<UnityEngine.AI.NavMeshAgent>(); if (agent != null) agent.enabled = false; 
+            var rb = enemy.GetComponent<Rigidbody>(); if (rb == null) rb = enemy.gameObject.AddComponent<Rigidbody>();
+            rb.isKinematic = false;
+            rb.AddForce(Vector3.up * 45f, ForceMode.VelocityChange);
+            rb.AddTorque(new Vector3(10f, 30f, 20f), ForceMode.VelocityChange);
+        }
+    }
+
+    void DrawAllEnemiesESP(float sw, float sh) { foreach (var enemy in FindObjectsByType<node_AIMovement>(FindObjectsSortMode.None)) { if (enemy && enemy.gameObject.activeSelf) DrawBoxESP(enemy.transform, sh); } }
+    void DrawBoxESP(Transform t, float sh) {
+        if(bgTex == null) return;
         float hScale = t.localScale.y; Vector3 foot = t.position; Vector3 head = foot + Vector3.up * 1.9f * hScale;
         Vector3 w2s_f = mainCam.WorldToScreenPoint(foot); Vector3 w2s_h = mainCam.WorldToScreenPoint(head);
         if (w2s_f.z <= 0) return;
-        float hY = Screen.height - w2s_h.y; float fY = Screen.height - w2s_f.y; float h = fY - hY; float w = h / 2f * t.localScale.x; 
-        DrawRectOutline(new Rect(w2s_f.x - w/2f, hY, w, h), 2f);
+        
+        // Переводим координаты для scaled matrix
+        if (Application.isMobilePlatform) 
+        {
+            w2s_f.x *= 1280f / Screen.width; w2s_f.y *= 720f / Screen.height;
+            w2s_h.x *= 1280f / Screen.width; w2s_h.y *= 720f / Screen.height;
+        }
+        
+        float hY = sh - w2s_h.y; float fY = sh - w2s_f.y; float h = fY - hY; float w = h / 2f * t.localScale.x; 
+        DrawRectOutline(new Rect(w2s_f.x - w/2f, hY, w, h), 2f, whiteTex);
     }
-    void DrawRectOutline(Rect r, float t) { GUI.DrawTexture(new Rect(r.x, r.y, r.width, t), boxTexture); GUI.DrawTexture(new Rect(r.x, r.y + r.height - t, r.width, t), boxTexture); GUI.DrawTexture(new Rect(r.x, r.y, t, r.height), boxTexture); GUI.DrawTexture(new Rect(r.x + r.width - t, r.y, t, r.height), boxTexture); }
-}
-
-// --- КЛАССЫ ДЛЯ СОХРАНЕНИЯ ---
-
-[System.Serializable]
-public class MapData
-{
-    public List<SavedObject> objects = new List<SavedObject>();
-}
-
-[System.Serializable]
-public class SavedObject
-{
-    public string name;
-    public PrimitiveType type;
-    public Vector3 position;
-    public Quaternion rotation;
-    public Vector3 scale;
-    public Color color;
-    public bool isKinematic;
+    void DrawRectOutline(Rect r, float t, Texture2D tex) {
+        if(tex == null) return;
+        GUI.DrawTexture(new Rect(r.x, r.y, r.width, t), tex); GUI.DrawTexture(new Rect(r.x, r.y + r.height - t, r.width, t), tex); 
+        GUI.DrawTexture(new Rect(r.x, r.y, t, r.height), tex); GUI.DrawTexture(new Rect(r.x + r.width - t, r.y, t, r.height), tex);
+    }
 }

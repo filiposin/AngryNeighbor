@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 7851102030964892945}
   - component: {fileID: 6331916697976493527}
   - component: {fileID: 1423339808590966087}
+  - component: {fileID: 2522987430937094737}
   m_Layer: 7
   m_Name: Plate
   m_TagString: Untagged
@@ -142,3 +143,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemDefinition: {fileID: 11400000, guid: c70657cff8d35c74da1615a8ca2d297f, type: 2}
   freezeDurationAfterReturn: 2
+--- !u!114 &2522987430937094737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5580785166778649783}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: beb070a200948db4f9f82aa32c4c919f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitId: 

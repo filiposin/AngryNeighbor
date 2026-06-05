@@ -8,7 +8,9 @@ public class Inventory : MonoBehaviour
     {
         Off,
         Legacy,
-        Updated
+        Updated,
+        NineSlots,
+        NineSlotsUpdated
     }
 
     [Serializable]

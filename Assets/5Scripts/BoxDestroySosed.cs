@@ -40,7 +40,7 @@ public class BoxDestroySosed : MonoBehaviour
 
     private void ProcessCollision(GameObject targetObj)
     {
-        if (!targetObj.CompareTag("okno")) return;
+        if (!targetObj.CompareTag("Okno")) return;
 
         var replacer = targetObj.GetComponent<SimpleReplacer>();
         if (replacer != null)

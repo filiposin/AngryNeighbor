@@ -20,7 +20,7 @@ MonoBehaviour:
   holdPosition: {x: 0.12, y: -0.24, z: 0}
   holdEulerRotation: {x: -7.8, y: -98, z: 102.79}
   throwForce: 9
-  spawnDistanceFromCamera: 0.7
+  spawnDistanceFromCamera: 0.2
   poolSize: 1
   useCooldown: 0.2
   pickupSound: {fileID: 8300000, guid: 5b8fe2531f31f4740bda83215cb6bf9d, type: 3}

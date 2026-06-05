@@ -116,7 +116,7 @@ public class FP_CameraLook : MonoBehaviour
         }
 
         // 2. ОБЫЧНОЕ УПРАВЛЕНИЕ (если разрешено контроллером)
-        if (playerController.canControl)
+        if (playerController.canControl && !playerController.IsCursorForcedUnlocked)
         {
             switch (playerInput.UseMobileInput)
             {

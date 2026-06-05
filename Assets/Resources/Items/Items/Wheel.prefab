@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 8771680299763629450}
   - component: {fileID: 1603980615144749142}
   - component: {fileID: 3129562804670994304}
+  - component: {fileID: -2418303046623998573}
   m_Layer: 7
   m_Name: Wheel
   m_TagString: Untagged
@@ -129,6 +130,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb027a2c66c04ad4780661a4fbe9fe79, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &-2418303046623998573
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1007846732837914004}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: beb070a200948db4f9f82aa32c4c919f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitId: 
 --- !u!1 &1007846732837914053
 GameObject:
   m_ObjectHideFlags: 0

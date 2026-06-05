@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 9106074659084863432}
   - component: {fileID: 6477851688287735143}
   - component: {fileID: 1216081060759238747}
+  - component: {fileID: -503575461414451841}
   m_Layer: 7
   m_Name: Bucket
   m_TagString: Untagged
@@ -144,3 +145,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemDefinition: {fileID: 11400000, guid: ee5bd59c512980e4db33130f597e8fac, type: 2}
   freezeDurationAfterReturn: 2
+--- !u!114 &-503575461414451841
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1814348390902085307}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: beb070a200948db4f9f82aa32c4c919f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitId: 

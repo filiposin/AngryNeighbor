@@ -17,8 +17,8 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 366558da09a1a1b46871a30578b98fc7, type: 3}
   itemPrefab: {fileID: 3380269287546117703, guid: 7e335eebd0da4ce4cba66386bdf3f1d6,
     type: 3}
-  holdPosition: {x: 0.111, y: 0.007, z: 0.144}
-  holdEulerRotation: {x: 134.648, y: 270.667, z: 452.74}
+  holdPosition: {x: -0.08, y: 0, z: 0.144}
+  holdEulerRotation: {x: 33.9, y: 15.8, z: -127.3}
   throwForce: 8
   spawnDistanceFromCamera: 0.1
   poolSize: 0

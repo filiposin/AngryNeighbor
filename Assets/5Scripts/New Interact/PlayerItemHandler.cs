@@ -82,6 +82,9 @@ public class PlayerItemHandler : MonoBehaviour
 
     void Update()
     {
+        if (GameManager.Instance != null && (GameManager.Instance.IsSettingsOpen || GameManager.Instance.IsPauseOpen))
+            return;
+
         if (Input.GetKeyDown(inventoryKey))
             ToggleInventoryUI();
 
@@ -307,6 +310,17 @@ public class PlayerItemHandler : MonoBehaviour
                     }
                     break;
 
+                case Inventory.PickupMode.NineSlots:
+                    TryPickupToBackpack(def, obj, out _);
+                    break;
+
+                case Inventory.PickupMode.NineSlotsUpdated:
+                    if (!TryPickupToEquipmentSlot(def, obj, true, false))
+                    {
+                        TryPickupToBackpack(def, obj, out _);
+                    }
+                    break;
+
                 default:
                     TryPickupToEquipmentSlot(def, obj, true, true);
                     break;
@@ -485,7 +499,7 @@ public class PlayerItemHandler : MonoBehaviour
         float force = heldDefinition != null ? heldDefinition.throwForce : 8f;
         Vector3 throwVelocity = camTransform.forward * force;
 
-        if (inventory != null && inventory.BackpackEnabled)
+        if (inventory != null && inventory.BackpackEnabled && (inventory.pickupMode == Inventory.PickupMode.Legacy || inventory.pickupMode == Inventory.PickupMode.Updated))
         {
             RemoveHeldItemFromLinkedInventory();
         }
@@ -546,9 +560,12 @@ public class PlayerItemHandler : MonoBehaviour
 
         if (inventory.BackpackEnabled)
         {
-            bool movedLinkedItem = TryMoveLinkedInventoryItem(fromArea, fromIndex, toArea, toIndex);
-            inventoryUI?.Refresh();
-            return movedLinkedItem;
+            if (inventory.pickupMode == Inventory.PickupMode.Legacy || inventory.pickupMode == Inventory.PickupMode.Updated)
+            {
+                bool movedLinkedItem = TryMoveLinkedInventoryItem(fromArea, fromIndex, toArea, toIndex);
+                inventoryUI?.Refresh();
+                return movedLinkedItem;
+            }
         }
 
         ItemDefinition toDef = GetDefinition(toArea, toIndex);
@@ -695,7 +712,7 @@ public class PlayerItemHandler : MonoBehaviour
 
     public void OnItemPlacedSuccess()
     {
-        if (inventory != null && inventory.BackpackEnabled)
+        if (inventory != null && inventory.BackpackEnabled && (inventory.pickupMode == Inventory.PickupMode.Legacy || inventory.pickupMode == Inventory.PickupMode.Updated))
         {
             RemoveHeldItemFromLinkedInventory();
         }
@@ -716,7 +733,7 @@ public class PlayerItemHandler : MonoBehaviour
         if (heldItemBase != null) heldItemBase.RestoreLayer();
 
         int slotToClear = heldSourceSlot;
-        bool removeFromLinkedInventory = inventory != null && inventory.BackpackEnabled;
+        bool removeFromLinkedInventory = inventory != null && inventory.BackpackEnabled && (inventory.pickupMode == Inventory.PickupMode.Legacy || inventory.pickupMode == Inventory.PickupMode.Updated);
 
         if (removeFromLinkedInventory)
             RemoveHeldItemFromLinkedInventory();
@@ -802,6 +819,8 @@ public class PlayerItemHandler : MonoBehaviour
     public void ToggleInventoryUI()
     {
         if (inventoryUI == null) return;
+        if (GameManager.Instance != null && (GameManager.Instance.IsSettingsOpen || GameManager.Instance.IsPauseOpen))
+            return;
         SetInventoryOpen(!inventoryUI.IsOpen);
     }
 
@@ -812,6 +831,33 @@ public class PlayerItemHandler : MonoBehaviour
         inventoryUI.SetOpen(open);
 
         if (!pausePlayerControlWhenInventoryOpen || fpController == null)
+        {
+            if (fpController != null) fpController.ForceCursorUnlock(open);
+            return;
+        }
+
+        if (open)
+        {
+            if (!inventoryControlApplied)
+            {
+                storedControlState = fpController.canControl;
+                inventoryControlApplied = true;
+            }
+
+            fpController.canControl = false;
+        }
+        else if (inventoryControlApplied)
+        {
+            fpController.canControl = storedControlState;
+            inventoryControlApplied = false;
+        }
+
+        fpController.ForceCursorUnlock(open);
+    }
+
+    public void SetExternalUIOpen(bool open)
+    {
+        if (fpController == null)
             return;
 
         if (open)
@@ -823,14 +869,14 @@ public class PlayerItemHandler : MonoBehaviour
             }
 
             fpController.canControl = false;
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
         }
         else if (inventoryControlApplied)
         {
             fpController.canControl = storedControlState;
             inventoryControlApplied = false;
         }
+
+        fpController.ForceCursorUnlock(open);
     }
 
     private int FindFirstEmptySlot()
@@ -868,6 +914,10 @@ public class PlayerItemHandler : MonoBehaviour
 
             for (int i = 0; i < inventory.maxSlots; i++)
             {
+                if (inventory.pickupMode != Inventory.PickupMode.Legacy && inventory.pickupMode != Inventory.PickupMode.Updated)
+                {
+                    DropStoredItem(slotModels, inventory.GetAt(i), i);
+                }
                 inventory.ClearAt(i);
                 if (i < slotModels.Length)
                     slotModels[i] = null;

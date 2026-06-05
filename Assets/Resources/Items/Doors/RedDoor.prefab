@@ -63,7 +63,7 @@ MeshRenderer:
   m_RenderingLayerMask: 4294967295
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 44aadf7fcceae064aa4055e87b197079, type: 2}
+  - {fileID: 2100000, guid: 3e17ae62a269c2a4f97cac5c420f9192, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -218,8 +218,8 @@ BoxCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 1.0000051, y: 1.0000005, z: 1.0000011}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 3.22, y: 1.0000005, z: 1.0000011}
+  m_Center: {x: -1.16, y: 0, z: 0}
 --- !u!1 &3229543377168775315
 GameObject:
   m_ObjectHideFlags: 0
@@ -415,7 +415,7 @@ MonoBehaviour:
         m_MethodName: PlayOneShot
         m_Mode: 2
         m_Arguments:
-          m_ObjectArgument: {fileID: 8300000, guid: fc06339f7781f374587bbefb258aa06c,
+          m_ObjectArgument: {fileID: 8300000, guid: 7211c52fb2f5f2242ab1727d14384f97,
             type: 3}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.AudioClip, UnityEngine
           m_IntArgument: 0
@@ -813,5 +813,5 @@ BoxCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 1.0000051, y: 1.0000005, z: 1.0000011}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 3.22, y: 1.0000005, z: 1.0000011}
+  m_Center: {x: -1.16, y: 0, z: 0}

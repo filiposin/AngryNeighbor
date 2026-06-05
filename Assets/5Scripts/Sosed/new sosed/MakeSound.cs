@@ -11,13 +11,13 @@ public static class AISoundManager
         foreach (var hit in hits)
         {
             // Ищем компонент контроллера (на самом объекте или родителях)
-            var enemy = hit.GetComponent<RichAI_EnemyController>();
-            if (enemy == null) enemy = hit.GetComponentInParent<RichAI_EnemyController>();
+            var enemy = hit.GetComponent<node_AIMovement>();
+            if (enemy == null) enemy = hit.GetComponentInParent<node_AIMovement>();
 
             if (enemy != null)
             {
                 // Сообщаем врагу, где был звук
-                enemy.HearSound(position);
+                // TODO: enemy.HearSound(position);
             }
         }
     }

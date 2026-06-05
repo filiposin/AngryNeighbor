@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 134359681775721174}
   - component: {fileID: 2511907119661932121}
   - component: {fileID: 1419821606992115312}
+  - component: {fileID: -1342711242445105724}
   m_Layer: 7
   m_Name: Mug
   m_TagString: Untagged
@@ -142,3 +143,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemDefinition: {fileID: 11400000, guid: b8bf590cdf8be22409724763d04d8a50, type: 2}
   freezeDurationAfterReturn: 2
+--- !u!114 &-1342711242445105724
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2978782461642082910}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: beb070a200948db4f9f82aa32c4c919f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitId: 

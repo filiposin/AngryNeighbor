@@ -29,6 +29,6 @@ MonoBehaviour:
   specificGroundHitSounds: []
   guid: 6f7e4ad9-5cae-457e-99f9-2b7d3c1abae6
   anim_EquipState: Equip
-  anim_IdleState: Idle_Handgun
+  anim_IdleState: Idle
   anim_UseState: Use
   anim_DropState: Drop
