@@ -36,6 +36,15 @@ public class FP_Controller : MonoBehaviour, ICrouchState
     public bool onLadder = false;
     public float climbSpeed = 3.0f;
 
+    [Header("Sliding System")]
+    public bool enableSliding = true;
+    public float slideSpeed = 2.0f;
+    public float slideMaxAngle = 85f;
+    public float slopeInputInfluence = 0.5f;
+    public float edgePushMultiplier = 0.8f;
+    public float edgeGravityMultiplier = 0.6f;
+    public float edgeInputInfluence = 0.5f;
+
     [Header("Character Motor Physics")]
     [SerializeField] private bool disableDuplicateBodyColliders = true;
 
@@ -68,7 +77,6 @@ public class FP_Controller : MonoBehaviour, ICrouchState
 
     private float antiBumpFactor = 0.75F;
     private float inputModifyFactor;
-    private float slideSpeed = 2.0F;
     private float minCrouchHeight;
     private float inputX, inputZ;
     private float defaultHeight;
@@ -144,7 +152,7 @@ public class FP_Controller : MonoBehaviour, ICrouchState
             camTransform = Camera.main.transform;
     }
     
-    void FixedUpdate()
+    void CalculateMovement()
     {
         ConfigureAttachedRigidbody();
 
@@ -179,43 +187,89 @@ public class FP_Controller : MonoBehaviour, ICrouchState
         if (grounded) {
             sliding = false;
             
-            // --- FIX START: Подняли точку пуска луча на 0.1f вверх ---
-            // Это спасает от застревания на стыках коллайдеров и краях
+            // --- НОВАЯ СИСТЕМА СКОЛЬЖЕНИЯ ---
             Vector3 rayStart = myTransform.position + Vector3.up * 0.1f;
             float realRayDistance = rayDistance + 0.1f; 
 
-            if (Physics.Raycast(rayStart, -Vector3.up, out hit, realRayDistance)) {
-                float angle = Vector3.Angle(hit.normal, Vector3.up);
-                // Добавлено angle < 85f, чтобы игнорировать абсолютно вертикальные стены и коробки
-                if (angle > slideLimit && angle < 85f && CanSlide())
-                    sliding = true;
+            bool isEdgeSliding = false;
+            Vector3 edgeSlideDir = Vector3.zero;
+
+            if (enableSliding)
+            {
+                // 1. Проверяем, стоим ли мы на наклонной поверхности (склоне)
+                if (Physics.Raycast(rayStart, Vector3.down, out hit, realRayDistance)) 
+                {
+                    float angle = Vector3.Angle(hit.normal, Vector3.up);
+                    // Игнорируем почти вертикальные стены
+                    if (angle > slideLimit && angle < slideMaxAngle && CanSlide()) 
+                    {
+                        sliding = true;
+                        hitNormal = hit.normal;
+                    }
+                }
+                // 2. Если луч не нашел землю, НО контроллер считается grounded, значит центр в воздухе
+                else 
+                {
+                    if (CanSlide()) 
+                    {
+                        sliding = true;
+                        isEdgeSliding = true;
+
+                        // Отталкиваем игрока от точки контакта с выступом
+                        edgeSlideDir = myTransform.position - contactPoint;
+                        edgeSlideDir.y = 0; 
+                        
+                        if (edgeSlideDir.sqrMagnitude < 0.01f) 
+                            edgeSlideDir = myTransform.forward;
+                            
+                        edgeSlideDir.Normalize();
+                    }
+                }
             }
-            else {
-                Physics.Raycast(contactPoint + Vector3.up, -Vector3.up, out hit);
-                float angle = Vector3.Angle(hit.normal, Vector3.up);
-                if (angle > slideLimit && angle < 85f && CanSlide())
-                    sliding = true;
-            }
-            // --- FIX END ---
 
             speed = isCrouching || !CanStand() ? crouchSpeed : run ? canRun ? runSpeed : walkSpeed : walkSpeed;
             
             if (sliding) 
             {
-                hitNormal = hit.normal;
-                moveDirection = new Vector3(hitNormal.x, -hitNormal.y, hitNormal.z);
-                Vector3.OrthoNormalize(ref hitNormal, ref moveDirection);
-                moveDirection *= slideSpeed;
-                
-                // Добавляем к вектору соскальзывания ввод от игрока, чтобы можно было "вырваться" из бага
                 Vector3 inputDir = new Vector3(inputX * inputModifyFactor, 0, inputZ * inputModifyFactor);
                 inputDir = myTransform.TransformDirection(inputDir) * speed;
-                moveDirection += inputDir * 0.5f; // Даем 50% управления во время соскальзывания
-                
-                playerControl = true; // Оставляем контроль включенным, как и советовал комментарий
+
+                if (isEdgeSliding)
+                {
+                    // Плавно толкаем наружу от края
+                    moveDirection = edgeSlideDir * (walkSpeed * edgePushMultiplier);
+                    
+                    // Тянем вниз, чтобы игрок не подпрыгивал
+                    moveDirection.y = -gravity * edgeGravityMultiplier;
+
+                    // Учитываем инпут только если игрок шагает В ПРОПАСТЬ (помогает быстрее спрыгнуть)
+                    if (Vector3.Dot(inputDir, edgeSlideDir) > 0)
+                    {
+                        moveDirection.x += inputDir.x * edgeInputInfluence;
+                        moveDirection.z += inputDir.z * edgeInputInfluence;
+                    }
+
+                    // СЕКРЕТ ПРЫЖКОВ ЗДЕСЬ: отключаем управление в воздухе при срыве!
+                    // Иначе после потери земли код контроля в воздухе (airControl) 
+                    // моментально вернет вас обратно на выступ, вызывая "баунс" 60 раз в секунду.
+                    playerControl = false; 
+                }
+                else
+                {
+                    // Стандартное соскальзывание по склону горы/крыши
+                    hitNormal = hit.normal;
+                    moveDirection = new Vector3(hitNormal.x, -hitNormal.y, hitNormal.z);
+                    Vector3.OrthoNormalize(ref hitNormal, ref moveDirection);
+                    moveDirection *= slideSpeed;
+                    moveDirection += inputDir * slopeInputInfluence;
+                    
+                    // На обычных склонах оставляем немного управления
+                    playerControl = true; 
+                }
             }
             else
             {
+                // Обычная ходьба
                 moveDirection = new Vector3(inputX * inputModifyFactor, -antiBumpFactor, inputZ * inputModifyFactor);
                 moveDirection = myTransform.TransformDirection(moveDirection) * speed;
                 playerControl = true;
@@ -310,7 +364,7 @@ public class FP_Controller : MonoBehaviour, ICrouchState
                 break;
         }
 
-        if (onLadder) { run = false; inputX = 0; }
+        if (onLadder) { run = false; }
         
         // Звук прыжка
         if (!isFly && jumpState == 0 && CanStand() && jump && jumpTimer >= antiBunnyHopFactor)
@@ -349,6 +403,8 @@ public class FP_Controller : MonoBehaviour, ICrouchState
                 else isCrouching = true;
             }
         }
+
+        CalculateMovement();
     }
 
     private void OnControllerColliderHit (ControllerColliderHit hit) {
@@ -413,13 +469,29 @@ public class FP_Controller : MonoBehaviour, ICrouchState
     {
         float verticalInput = playerInput.UseMobileInput ? 
             playerInput.MoveInput().z : Input.GetAxis("Vertical");
+        float horizontalInput = playerInput.UseMobileInput ? 
+            playerInput.MoveInput().x : Input.GetAxis("Horizontal");
     
-        moveDirection = new Vector3(0, verticalInput * climbSpeed, 0);
-        moveDirection = transform.TransformDirection(moveDirection);
-    
-        if (Mathf.Abs(verticalInput) < 0.1f)
+        Vector3 moveDir = camTransform.forward * verticalInput + camTransform.right * horizontalInput;
+        
+        if (jump && canJump)
         {
+            moveDirection = (camTransform.forward * -1.0f + Vector3.up * 1.5f).normalized * jumpForce;
+            OnLadderExit();
+            controller.Move(moveDirection * Time.deltaTime);
+            return;
+        }
+
+        if (moveDir.magnitude > 1f) moveDir.Normalize();
+    
+        if (Mathf.Abs(verticalInput) < 0.1f && Mathf.Abs(horizontalInput) < 0.1f)
+        {
+            moveDirection = Vector3.zero;
             moveDirection.y -= gravity * 0.1f * Time.deltaTime;
+        }
+        else
+        {
+            moveDirection = moveDir * climbSpeed;
         }
     
         controller.Move(moveDirection * Time.deltaTime);

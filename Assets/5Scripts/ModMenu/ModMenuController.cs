@@ -22,14 +22,17 @@ public class ModMenuController : MonoBehaviour
     private bool espEnabled = false;
     private bool invisibleMode = false;
     private bool freezeEnemy = false;
+    private bool freezePlayer = false;
     private bool muteEnemyAudio = false;
     private float uiOpacity = 1.0f; 
+    private bool espLineEnabled = false; 
 
     private float customWalkSpeed = 6.0f;
     private float customJumpForce = 8.0f;
     private float customEnemyHeight = 1.0f;
     private float customEnemyWidth = 1.0f;
     private float customEnemySpeed = 6.0f; 
+    private float playerTpStep = 1.0f; 
 
     // --- ФАН И МЕМЫ ---
     private bool spinBotMode = false; 
@@ -50,8 +53,10 @@ public class ModMenuController : MonoBehaviour
     private Color originalAmbientLight;
     
     // --- КАСТОМИЗАЦИЯ МЕНЮ ---
-    private string menuTitle = "Hacked By Mongabox [YouTube]";
+    private string menuTitle = "Hacked By Mongabox [Шутка, By Filiposin]";
     private Color currentBgColor = new Color(0.07f, 0.05f, 0.15f, 0.95f);
+    private bool hideModButtonVisually = false;
+    private float menuScale = 1.0f;
 
     // --- Редактор объектов ---
     private GameObject currentHitObject; 
@@ -60,6 +65,10 @@ public class ModMenuController : MonoBehaviour
     private float editorMoveStep = 0.5f; 
     private float editorRotStep = 45f;   
     private float editorScaleStep = 0.5f;
+    private bool objectEspEnabled = false;
+    private Vector2 hierarchyScrollPosition;
+    private List<GameObject> sceneObjects = new List<GameObject>();
+    private HashSet<GameObject> expandedObjects = new HashSet<GameObject>();
 
     // --- Списки предметов ---
     private List<GameObject> itemPrefabs = new List<GameObject>();
@@ -141,7 +150,6 @@ public class ModMenuController : MonoBehaviour
             showMenu = !showMenu;
             if (playerController) 
             {
-                playerController.canControl = !showMenu;
                 playerController.ForceCursorUnlock(showMenu);
             }
             else
@@ -172,6 +180,7 @@ public class ModMenuController : MonoBehaviour
             playerCanvasGroup = playerController.GetComponentInChildren<CanvasGroup>(true);
             if (customWalkSpeed == 0) { customWalkSpeed = playerController.walkSpeed; customJumpForce = playerController.jumpForce; }
             if (originalPlayerGravity == 20f) originalPlayerGravity = playerController.gravity; // Сохраняем начальную гравитацию FP_Controller
+            if (freezePlayer) playerController.canControl = false; // Применяем состояние заморозки
         }
 
         if (mainCam != null && customFOV == 0) customFOV = mainCam.fieldOfView;
@@ -269,6 +278,8 @@ public class ModMenuController : MonoBehaviour
         btnStyle.normal.background = transparentTex; btnStyle.normal.textColor = Color.white;
         btnStyle.hover.textColor = new Color(0.8f, 0.8f, 1f);
         btnStyle.alignment = TextAnchor.MiddleCenter; btnStyle.fontSize = 13;
+        btnStyle.margin = new RectOffset(2, 2, 2, 2);
+        btnStyle.padding = new RectOffset(2, 2, 2, 2);
 
         tabStyle = new GUIStyle(btnStyle);
         tabStyle.alignment = TextAnchor.MiddleLeft; tabStyle.padding = new RectOffset(15, 0, 0, 0); tabStyle.fontSize = 14;
@@ -288,13 +299,17 @@ public class ModMenuController : MonoBehaviour
     {
         if (!canUseModMenu) return;
         
-        float sw = Screen.width; float sh = Screen.height;
+        float sw = Screen.width / menuScale; float sh = Screen.height / menuScale;
         if (Application.isMobilePlatform)
         {
-            sw = 1280f; sh = 720f;
-            float rx = Screen.width / 1280f;
-            float ry = Screen.height / 720f;
+            sw = 1280f / menuScale; sh = 720f / menuScale;
+            float rx = (Screen.width / 1280f) * menuScale;
+            float ry = (Screen.height / 720f) * menuScale;
             GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(rx, ry, 1));
+        }
+        else
+        {
+            GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(menuScale, menuScale, 1));
         }
 
         InitStyles();
@@ -308,12 +323,21 @@ public class ModMenuController : MonoBehaviour
         if (!showMenu)
         {
             GUIStyle openBtn = new GUIStyle(GUI.skin.button) { fontSize = 18, fontStyle = FontStyle.Bold };
-            if (GUI.Button(new Rect(sw - 90, 20, 70, 70), "MOD", openBtn))
+            if (hideModButtonVisually)
+            {
+                openBtn.normal.background = transparentTex;
+                openBtn.hover.background = transparentTex;
+                openBtn.active.background = transparentTex;
+                openBtn.normal.textColor = Color.clear;
+                openBtn.hover.textColor = Color.clear;
+                openBtn.active.textColor = Color.clear;
+            }
+
+            if (GUI.Button(new Rect(sw - 90, 20, 70, 70), hideModButtonVisually ? "" : "MOD", openBtn))
             {
                 showMenu = true;
                 if (playerController) 
                 {
-                    playerController.canControl = false;
                     playerController.ForceCursorUnlock(true);
                 }
                 else
@@ -322,15 +346,19 @@ public class ModMenuController : MonoBehaviour
                 }
             }
             if (espEnabled) DrawAllEnemiesESP(sw, sh);
+            if (objectEspEnabled && lockedObject != null) DrawBoxESP(lockedObject.transform, sh, true);
             return;
         }
 
         if (espEnabled) DrawAllEnemiesESP(sw, sh);
+        if (objectEspEnabled && lockedObject != null) DrawBoxESP(lockedObject.transform, sh, true);
 
         if (currentHitObject != null && !isObjectLocked && currentTab == 4)
              GUI.Label(new Rect(sw/2 - 100, sh/2 + 20, 200, 30), $"[ {currentHitObject.name} ]", textStyle);
 
         GUI.backgroundColor = Color.clear;
+        windowRect.x = Mathf.Clamp(windowRect.x, 0, Mathf.Max(0, sw - windowRect.width));
+        windowRect.y = Mathf.Clamp(windowRect.y, 0, Mathf.Max(0, sh - windowRect.height));
         windowRect = GUI.Window(0, windowRect, DrawModernWindow, "", GUIStyle.none);
     }
 
@@ -345,7 +373,6 @@ public class ModMenuController : MonoBehaviour
             showMenu = false;
             if (playerController) 
             {
-                playerController.canControl = true;
                 playerController.ForceCursorUnlock(false);
             }
             else if (!Application.isMobilePlatform)
@@ -443,6 +470,31 @@ public class ModMenuController : MonoBehaviour
         DrawStepper("Player Size", ref customPlayerScale, 0.5f, 0.1f, 5.0f);
         DrawGridButton("Moon Gravity", ref lowGravity);
         GUILayout.EndHorizontal();
+
+        GUILayout.Space(15);
+        GUILayout.BeginHorizontal();
+        bool oldFreeze = freezePlayer; DrawGridButton("Freeze Player", ref freezePlayer);
+        if (oldFreeze != freezePlayer && playerController != null) playerController.canControl = !freezePlayer;
+        DrawStepper("TP Step", ref playerTpStep, 1.0f, 0.5f, 50f);
+        GUILayout.EndHorizontal();
+        
+        GUILayout.Space(5);
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("TP Fwd", btnStyle, GUILayout.Width(50))) TeleportPlayer(playerController.transform.forward);
+        if (GUILayout.Button("TP Bck", btnStyle, GUILayout.Width(50))) TeleportPlayer(-playerController.transform.forward);
+        if (GUILayout.Button("TP Lft", btnStyle, GUILayout.Width(50))) TeleportPlayer(-playerController.transform.right);
+        if (GUILayout.Button("TP Rgt", btnStyle, GUILayout.Width(50))) TeleportPlayer(playerController.transform.right);
+        if (GUILayout.Button("TP Up", btnStyle, GUILayout.Width(50))) TeleportPlayer(Vector3.up);
+        if (GUILayout.Button("TP Dwn", btnStyle, GUILayout.Width(50))) TeleportPlayer(Vector3.down);
+        GUILayout.EndHorizontal();
+    }
+
+    void TeleportPlayer(Vector3 dir) {
+        if (playerController != null && playerController.controller != null) {
+            playerController.controller.enabled = false;
+            playerController.transform.position += dir * playerTpStep;
+            playerController.controller.enabled = true;
+        }
     }
 
     void DrawEnemySettings()
@@ -464,10 +516,11 @@ public class ModMenuController : MonoBehaviour
 
         GUILayout.Space(15);
         GUILayout.BeginHorizontal();
-        DrawGridButton("ESP", ref espEnabled);
+        DrawGridButton("ESP Box", ref espEnabled);
+        DrawGridButton("ESP Line", ref espLineEnabled);
         float oldW = customEnemyWidth; float oldH = customEnemyHeight;
-        DrawStepper("Scale Width", ref customEnemyWidth, 0.1f, 0.1f, 5.0f);
-        DrawStepper("Scale Height", ref customEnemyHeight, 0.1f, 0.1f, 5.0f);
+        DrawStepper("Width", ref customEnemyWidth, 0.1f, 0.1f, 5.0f);
+        DrawStepper("Height", ref customEnemyHeight, 0.1f, 0.1f, 5.0f);
         if (oldW != customEnemyWidth || oldH != customEnemyHeight)
         {
             foreach(var e in FindObjectsByType<node_AIMovement>(FindObjectsSortMode.None))
@@ -585,59 +638,141 @@ public class ModMenuController : MonoBehaviour
         GUILayout.EndHorizontal();
 
         GUILayout.Space(15);
+        GUILayout.BeginHorizontal();
+
+        // --- Левая колонка (Рейкаст и свойства) ---
+        GUILayout.BeginVertical(GUILayout.Width(350));
         GameObject target = isObjectLocked ? lockedObject : currentHitObject;
         string status = target == null ? "Look at an object to select..." : (isObjectLocked ? $"LOCKED: {target.name}" : $"LOOKING AT: {target.name}");
         
-        if (GUILayout.Button(status, btnStyle, GUILayout.Width(300)))
+        if (GUILayout.Button(status, btnStyle, GUILayout.Width(340)))
             if (target != null) { isObjectLocked = !isObjectLocked; lockedObject = isObjectLocked ? currentHitObject : null; }
 
         if (isObjectLocked && lockedObject != null)
         {
             GUILayout.Space(10);
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Colors:", textStyle, GUILayout.Width(60));
-            if(GUILayout.Button("White", btnStyle, GUILayout.Width(50))) ChangeObjectColor(Color.white);
-            if(GUILayout.Button("Red", btnStyle, GUILayout.Width(40))) ChangeObjectColor(Color.red);
-            if(GUILayout.Button("Green", btnStyle, GUILayout.Width(50))) ChangeObjectColor(Color.green);
-            if(GUILayout.Button("Blue", btnStyle, GUILayout.Width(40))) ChangeObjectColor(Color.blue);
-            if(GUILayout.Button("Black", btnStyle, GUILayout.Width(50))) ChangeObjectColor(Color.black);
-            if (GUILayout.Button("TP To Me", btnStyle, GUILayout.Width(80))) TeleportObjectToPlayer();
+            GUILayout.Label("Colors:", textStyle, GUILayout.Width(50));
+            if(GUILayout.Button("Wht", btnStyle, GUILayout.Width(35))) ChangeObjectColor(Color.white);
+            if(GUILayout.Button("Red", btnStyle, GUILayout.Width(35))) ChangeObjectColor(Color.red);
+            if(GUILayout.Button("Grn", btnStyle, GUILayout.Width(35))) ChangeObjectColor(Color.green);
+            if(GUILayout.Button("Blu", btnStyle, GUILayout.Width(35))) ChangeObjectColor(Color.blue);
+            if(GUILayout.Button("Blk", btnStyle, GUILayout.Width(35))) ChangeObjectColor(Color.black);
+            if (GUILayout.Button("TP", btnStyle, GUILayout.Width(35))) TeleportObjectToPlayer();
             GUILayout.EndHorizontal();
-
-            GUILayout.Space(10);
-            GUILayout.BeginHorizontal();
-            DrawStepper("Move Step", ref editorMoveStep, 0.5f, 0.1f, 5.0f);
-            DrawStepper("Rot Step", ref editorRotStep, 15f, 1f, 90f, "F0");
-            DrawStepper("Scale Step", ref editorScaleStep, 0.5f, 0.1f, 5.0f);
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(5);
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Pos X-", btnStyle, GUILayout.Width(60))) lockedObject.transform.position += Vector3.left * editorMoveStep;
-            if (GUILayout.Button("Pos X+", btnStyle, GUILayout.Width(60))) lockedObject.transform.position += Vector3.right * editorMoveStep;
-            if (GUILayout.Button("Pos Y-", btnStyle, GUILayout.Width(60))) lockedObject.transform.position += Vector3.down * editorMoveStep;
-            if (GUILayout.Button("Pos Y+", btnStyle, GUILayout.Width(60))) lockedObject.transform.position += Vector3.up * editorMoveStep;
-            if (GUILayout.Button("Pos Z-", btnStyle, GUILayout.Width(60))) lockedObject.transform.position += Vector3.back * editorMoveStep;
-            if (GUILayout.Button("Pos Z+", btnStyle, GUILayout.Width(60))) lockedObject.transform.position += Vector3.forward * editorMoveStep;
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Rot P-", btnStyle, GUILayout.Width(60))) lockedObject.transform.Rotate(-editorRotStep, 0, 0);
-            if (GUILayout.Button("Rot P+", btnStyle, GUILayout.Width(60))) lockedObject.transform.Rotate(editorRotStep, 0, 0);
-            if (GUILayout.Button("Rot Y-", btnStyle, GUILayout.Width(60))) lockedObject.transform.Rotate(0, -editorRotStep, 0);
-            if (GUILayout.Button("Rot Y+", btnStyle, GUILayout.Width(60))) lockedObject.transform.Rotate(0, editorRotStep, 0);
             
-            Vector3 s = lockedObject.transform.localScale;
-            if (GUILayout.Button("Scl X-", btnStyle, GUILayout.Width(60))) lockedObject.transform.localScale = new Vector3(s.x - editorScaleStep, s.y, s.z);
-            if (GUILayout.Button("Scl X+", btnStyle, GUILayout.Width(60))) lockedObject.transform.localScale = new Vector3(s.x + editorScaleStep, s.y, s.z);
+            GUILayout.Space(5);
+            DrawGridButton("ESP Box", ref objectEspEnabled, 100);
+
+            GUILayout.Space(15);
+            GUILayout.BeginHorizontal();
+            DrawStepper("Move", ref editorMoveStep, 0.5f, 0.1f, 5.0f);
+            DrawStepper("Rot", ref editorRotStep, 15f, 1f, 90f, "F0");
             GUILayout.EndHorizontal();
+            
+            GUILayout.Space(5);
+            DrawStepper("Scale", ref editorScaleStep, 0.5f, 0.1f, 5.0f);
 
             GUILayout.Space(10);
+            // POSITION
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Pos X-", btnStyle, GUILayout.Width(50))) lockedObject.transform.position += Vector3.left * editorMoveStep;
+            if (GUILayout.Button("Pos X+", btnStyle, GUILayout.Width(50))) lockedObject.transform.position += Vector3.right * editorMoveStep;
+            if (GUILayout.Button("Pos Y-", btnStyle, GUILayout.Width(50))) lockedObject.transform.position += Vector3.down * editorMoveStep;
+            if (GUILayout.Button("Pos Y+", btnStyle, GUILayout.Width(50))) lockedObject.transform.position += Vector3.up * editorMoveStep;
+            if (GUILayout.Button("Pos Z-", btnStyle, GUILayout.Width(50))) lockedObject.transform.position += Vector3.back * editorMoveStep;
+            if (GUILayout.Button("Pos Z+", btnStyle, GUILayout.Width(50))) lockedObject.transform.position += Vector3.forward * editorMoveStep;
+            GUILayout.EndHorizontal();
+
+            // ROTATION 
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Rot X-", btnStyle, GUILayout.Width(50))) lockedObject.transform.Rotate(-editorRotStep, 0, 0);
+            if (GUILayout.Button("Rot X+", btnStyle, GUILayout.Width(50))) lockedObject.transform.Rotate(editorRotStep, 0, 0);
+            if (GUILayout.Button("Rot Y-", btnStyle, GUILayout.Width(50))) lockedObject.transform.Rotate(0, -editorRotStep, 0);
+            if (GUILayout.Button("Rot Y+", btnStyle, GUILayout.Width(50))) lockedObject.transform.Rotate(0, editorRotStep, 0);
+            if (GUILayout.Button("Rot Z-", btnStyle, GUILayout.Width(50))) lockedObject.transform.Rotate(0, 0, -editorRotStep);
+            if (GUILayout.Button("Rot Z+", btnStyle, GUILayout.Width(50))) lockedObject.transform.Rotate(0, 0, editorRotStep);
+            GUILayout.EndHorizontal();
+            
+            // SCALE
+            GUILayout.BeginHorizontal();
+            Vector3 s = lockedObject.transform.localScale;
+            if (GUILayout.Button("Scl X-", btnStyle, GUILayout.Width(50))) lockedObject.transform.localScale = new Vector3(s.x - editorScaleStep, s.y, s.z);
+            if (GUILayout.Button("Scl X+", btnStyle, GUILayout.Width(50))) lockedObject.transform.localScale = new Vector3(s.x + editorScaleStep, s.y, s.z);
+            if (GUILayout.Button("Scl Y-", btnStyle, GUILayout.Width(50))) lockedObject.transform.localScale = new Vector3(s.x, s.y - editorScaleStep, s.z);
+            if (GUILayout.Button("Scl Y+", btnStyle, GUILayout.Width(50))) lockedObject.transform.localScale = new Vector3(s.x, s.y + editorScaleStep, s.z);
+            if (GUILayout.Button("Scl Z-", btnStyle, GUILayout.Width(50))) lockedObject.transform.localScale = new Vector3(s.x, s.y, s.z - editorScaleStep);
+            if (GUILayout.Button("Scl Z+", btnStyle, GUILayout.Width(50))) lockedObject.transform.localScale = new Vector3(s.x, s.y, s.z + editorScaleStep);
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(15);
             GUILayout.BeginHorizontal();
             Rigidbody rb = lockedObject.GetComponent<Rigidbody>();
-            if (rb != null) if (GUILayout.Button(rb.isKinematic ? "Physics: OFF" : "Physics: ON", btnStyle, GUILayout.Width(150))) rb.isKinematic = !rb.isKinematic;
-            if (GUILayout.Button("DELETE OBJECT", btnStyle, GUILayout.Width(150))) { Destroy(lockedObject); isObjectLocked = false; lockedObject = null; }
+            if (rb != null) if (GUILayout.Button(rb.isKinematic ? "Physics: OFF" : "Physics: ON", btnStyle, GUILayout.Width(100))) rb.isKinematic = !rb.isKinematic;
+            if (GUILayout.Button(lockedObject.activeSelf ? "Active: ON" : "Active: OFF", btnStyle, GUILayout.Width(100))) lockedObject.SetActive(!lockedObject.activeSelf);
+            if (GUILayout.Button("DELETE OBJECT", btnStyle, GUILayout.Width(120))) { Destroy(lockedObject); isObjectLocked = false; lockedObject = null; objectEspEnabled = false; }
             GUILayout.EndHorizontal();
+        }
+        GUILayout.EndVertical();
+
+        // --- Правая колонка (Иерархия) ---
+        GUILayout.BeginVertical();
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("Hierarchy:", textStyle, GUILayout.Width(80));
+        if (GUILayout.Button("Refresh", btnStyle, GUILayout.Width(80))) RefreshHierarchy();
+        GUILayout.EndHorizontal();
+        
+        hierarchyScrollPosition = GUILayout.BeginScrollView(hierarchyScrollPosition, GUILayout.Height(300));
+        foreach (var obj in sceneObjects)
+        {
+            if (obj == null) continue;
+            DrawHierarchyNode(obj, 0);
+        }
+        GUILayout.EndScrollView();
+        GUILayout.EndVertical();
+
+        GUILayout.EndHorizontal();
+    }
+
+    void DrawHierarchyNode(GameObject obj, int indentLevel)
+    {
+        if (obj == null) return;
+        
+        GUILayout.BeginHorizontal();
+        if (indentLevel > 0) GUILayout.Space(indentLevel * 15);
+        
+        bool hasChildren = obj.transform.childCount > 0;
+        if (hasChildren)
+        {
+            bool isExpanded = expandedObjects.Contains(obj);
+            if (GUILayout.Button(isExpanded ? "-" : "+", btnStyle, GUILayout.Width(25), GUILayout.Height(25)))
+            {
+                if (isExpanded) expandedObjects.Remove(obj);
+                else expandedObjects.Add(obj);
+            }
+        }
+        else
+        {
+            GUILayout.Space(29); // Свободное место, если нет детей (чтобы выровнять)
+        }
+        
+        if (!obj.activeInHierarchy) GUI.color = Color.gray;
+        if (lockedObject == obj && isObjectLocked) GUI.color = Color.green;
+
+        if (GUILayout.Button(obj.name, tabStyle, GUILayout.Height(25)))
+        {
+            isObjectLocked = true;
+            lockedObject = obj;
+        }
+        GUI.color = Color.white;
+        GUILayout.EndHorizontal();
+
+        if (hasChildren && expandedObjects.Contains(obj))
+        {
+            for (int i = 0; i < obj.transform.childCount; i++)
+            {
+                DrawHierarchyNode(obj.transform.GetChild(i).gameObject, indentLevel + 1);
+            }
         }
     }
 
@@ -649,7 +784,13 @@ public class ModMenuController : MonoBehaviour
         GUILayout.EndHorizontal();
 
         GUILayout.Space(20);
+        GUILayout.BeginHorizontal();
         DrawStepper("UI Opacity", ref uiOpacity, 0.1f, 0f, 1f);
+        GUILayout.Space(20);
+        DrawStepper("Menu Scale", ref menuScale, 0.1f, 0.5f, 3.0f);
+        GUILayout.Space(20);
+        DrawGridButton("Invisible MOD Button", ref hideModButtonVisually, 200);
+        GUILayout.EndHorizontal();
         
         GUILayout.Space(20);
         GUILayout.Label("Background Color Presets:", textStyle);
@@ -660,6 +801,21 @@ public class ModMenuController : MonoBehaviour
         if (GUILayout.Button("Dark Green", btnStyle, GUILayout.Width(100))) ChangeBgColor(new Color(0.02f, 0.15f, 0.02f, 0.95f));
         if (GUILayout.Button("Pink", btnStyle, GUILayout.Width(100))) ChangeBgColor(new Color(0.2f, 0.05f, 0.15f, 0.95f));
         GUILayout.EndHorizontal();
+    }
+
+    void RefreshHierarchy()
+    {
+        sceneObjects.Clear();
+        // Находим все объекты в сцене
+        GameObject[] allObjects = FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var obj in allObjects)
+        {
+            // Убираем скрытые объекты или объекты, которые нам не нужны в иерархии (по желанию)
+            if (obj.transform.parent == null)
+            {
+                sceneObjects.Add(obj);
+            }
+        }
     }
 
     // --- EDITOR LOGIC & HELPERS ---
@@ -763,10 +919,18 @@ public class ModMenuController : MonoBehaviour
         }
     }
 
-    void DrawAllEnemiesESP(float sw, float sh) { foreach (var enemy in FindObjectsByType<node_AIMovement>(FindObjectsSortMode.None)) { if (enemy && enemy.gameObject.activeSelf) DrawBoxESP(enemy.transform, sh); } }
-    void DrawBoxESP(Transform t, float sh) {
+    void DrawAllEnemiesESP(float sw, float sh) { foreach (var enemy in FindObjectsByType<node_AIMovement>(FindObjectsSortMode.None)) { if (enemy && enemy.gameObject.activeSelf) DrawBoxESP(enemy.transform, sh, false); } }
+    void DrawBoxESP(Transform t, float sh, bool isObject) {
         if(bgTex == null) return;
-        float hScale = t.localScale.y; Vector3 foot = t.position; Vector3 head = foot + Vector3.up * 1.9f * hScale;
+        float hScale = isObject ? (t.GetComponent<Collider>() != null ? t.GetComponent<Collider>().bounds.size.y : t.localScale.y) : t.localScale.y; 
+        Vector3 foot = t.position; 
+        
+        if (isObject) {
+            Collider c = t.GetComponent<Collider>();
+            if (c != null) foot = c.bounds.min;
+        }
+
+        Vector3 head = isObject ? (t.GetComponent<Collider>() != null ? new Vector3(foot.x, t.GetComponent<Collider>().bounds.max.y, foot.z) : foot + Vector3.up * 1.9f * hScale) : foot + Vector3.up * 1.9f * hScale;
         Vector3 w2s_f = mainCam.WorldToScreenPoint(foot); Vector3 w2s_h = mainCam.WorldToScreenPoint(head);
         if (w2s_f.z <= 0) return;
         
@@ -776,13 +940,35 @@ public class ModMenuController : MonoBehaviour
             w2s_f.x *= 1280f / Screen.width; w2s_f.y *= 720f / Screen.height;
             w2s_h.x *= 1280f / Screen.width; w2s_h.y *= 720f / Screen.height;
         }
+
+        w2s_f.x /= menuScale; w2s_f.y /= menuScale;
+        w2s_h.x /= menuScale; w2s_h.y /= menuScale;
         
-        float hY = sh - w2s_h.y; float fY = sh - w2s_f.y; float h = fY - hY; float w = h / 2f * t.localScale.x; 
+        float hY = sh - w2s_h.y; float fY = sh - w2s_f.y; float h = fY - hY; 
+        float w = isObject ? (t.GetComponent<Collider>() != null ? t.GetComponent<Collider>().bounds.size.x / menuScale * (100f / w2s_f.z) : h / 2f * t.localScale.x) : h / 2f * t.localScale.x; 
+        
         DrawRectOutline(new Rect(w2s_f.x - w/2f, hY, w, h), 2f, whiteTex);
+
+        if (!isObject && espLineEnabled)
+        {
+            DrawLine(new Vector2(Screen.width / 2f / menuScale, sh), new Vector2(w2s_f.x, fY), whiteTex, 2f);
+        }
     }
     void DrawRectOutline(Rect r, float t, Texture2D tex) {
         if(tex == null) return;
         GUI.DrawTexture(new Rect(r.x, r.y, r.width, t), tex); GUI.DrawTexture(new Rect(r.x, r.y + r.height - t, r.width, t), tex); 
         GUI.DrawTexture(new Rect(r.x, r.y, t, r.height), tex); GUI.DrawTexture(new Rect(r.x + r.width - t, r.y, t, r.height), tex);
+    }
+    void DrawLine(Vector2 start, Vector2 end, Texture2D tex, float width)
+    {
+        Vector2 d = end - start;
+        float a = Mathf.Rad2Deg * Mathf.Atan2(d.y, d.x);
+        float l = d.magnitude;
+
+        Matrix4x4 backupMatrix = GUI.matrix;
+        GUIUtility.ScaleAroundPivot(new Vector2(l, width), new Vector2(start.x, start.y + 0.5f));
+        GUIUtility.RotateAroundPivot(a, start);
+        GUI.DrawTexture(new Rect(start.x, start.y, 1, 1), tex);
+        GUI.matrix = backupMatrix;
     }
 }

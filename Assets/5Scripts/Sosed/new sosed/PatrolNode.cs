@@ -32,8 +32,7 @@ public class PatrolNode : MonoBehaviour
     public bool hasSound = false;
     public AudioSource specialAudio;
 
-    // --- НОВОЕ: списки для включения/выключения GameObject'ов ---
-    [Header("Special Node: GameObject toggles (новое)")]
+    [Header("Special Node: GameObject toggles")]
     [Tooltip("Эти GameObject включить при прибытии (active = true)")]
     public List<GameObject> enableGameObjectOnArrive = new List<GameObject>();
     [Tooltip("Эти GameObject отключить при прибытии (active = false)")]
@@ -41,10 +40,6 @@ public class PatrolNode : MonoBehaviour
 
     // ----------------------------- Методы -----------------------------
 
-    /// <summary>
-    /// Включить/выключить SkinnedMeshRenderer на Transform и всех детей.
-    /// Сохранён оригинальный метод (работает с Transform).
-    /// </summary>
     public static void SetSMRActiveOnTransform(Transform t, bool active)
     {
         if (t == null) return;
@@ -56,9 +51,6 @@ public class PatrolNode : MonoBehaviour
         foreach (var s in smrs) s.enabled = active;
     }
 
-    /// <summary>
-    /// Включить/выключить GameObject (activeSelf -> active)
-    /// </summary>
     public static void SetActiveOnGameObject(GameObject go, bool active)
     {
         if (go == null) return;
@@ -66,10 +58,6 @@ public class PatrolNode : MonoBehaviour
         go.SetActive(active);
     }
 
-    /// <summary>
-    /// Включить/выключить SkinnedMeshRenderer(ы) на GameObject и всех детей.
-    /// (Альтернатива для случаев, когда тебе нужно отключать SMR по GameObject'у).
-    /// </summary>
     public static void SetSMRActiveOnGameObject(GameObject go, bool active)
     {
         if (go == null) return;

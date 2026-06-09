@@ -77,6 +77,28 @@ public class FP_Player_Inspector : Editor {
         {
             fP_Controller.crouchHeight = EditorGUILayout.FloatField("Height", fP_Controller.crouchHeight);
         }
+        EditorGUILayout.Space();
+
+        // Slide Section
+        EditorGUILayout.BeginHorizontal();
+        fP_Controller.enableSliding = EditorGUILayout.ToggleLeft("Slide", fP_Controller.enableSliding, GUILayout.Width(70));
+        if (fP_Controller.enableSliding)
+        {
+            GUILayout.Label("Speed", GUILayout.Width(42.5F));
+            fP_Controller.slideSpeed = EditorGUILayout.FloatField("", fP_Controller.slideSpeed, GUILayout.Width(50));
+        }
+        EditorGUILayout.EndHorizontal();
+
+        if (fP_Controller.enableSliding)
+        {
+            EditorGUI.indentLevel++;
+            fP_Controller.slideMaxAngle = EditorGUILayout.FloatField("Max Slide Angle", fP_Controller.slideMaxAngle);
+            fP_Controller.slopeInputInfluence = EditorGUILayout.FloatField("Slope Input Influence", fP_Controller.slopeInputInfluence);
+            fP_Controller.edgePushMultiplier = EditorGUILayout.FloatField("Edge Push Multiplier", fP_Controller.edgePushMultiplier);
+            fP_Controller.edgeGravityMultiplier = EditorGUILayout.FloatField("Edge Gravity Multiplier", fP_Controller.edgeGravityMultiplier);
+            fP_Controller.edgeInputInfluence = EditorGUILayout.FloatField("Edge Input Influence", fP_Controller.edgeInputInfluence);
+            EditorGUI.indentLevel--;
+        }
 
         this.serializedObject.ApplyModifiedProperties();
         if (GUI.changed)

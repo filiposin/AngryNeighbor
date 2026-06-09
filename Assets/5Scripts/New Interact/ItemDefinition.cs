@@ -31,6 +31,7 @@ public class ItemDefinition : ScriptableObject
 
     [Header("Optional gameplay")]
     public float useCooldown = 0.2f;
+    public bool tpBackAfterDeath = true;
 
     [Header("Sounds")]
     public AudioClip pickupSound;

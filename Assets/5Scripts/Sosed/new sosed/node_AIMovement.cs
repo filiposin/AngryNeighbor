@@ -9,9 +9,7 @@ public class node_AIMovement : MonoBehaviour
 	public enum AIType
 	{
 		wander = 0,
-		nodeWander = 1,
-		wayPoints = 2,
-		guard = 3
+		nodeWander = 1
 	}
 
 	[Serializable]
@@ -25,47 +23,6 @@ public class node_AIMovement : MonoBehaviour
 
 		[Tooltip("max distance from current position agent will wander")]
 		public float wanderRadius = 25f;
-	}
-
-	[Serializable]
-	public class NodeWanderOptions
-	{
-		[Tooltip("If true, the agent will only wander to nodes with the group name defined in the 'Node Group Name' setting")]
-		public bool useNodeGroup;
-
-		[Tooltip("If 'Use Node Group' is true, the name of the node group the agent can wander through")]
-		public string nodeGroupName;
-
-		[Tooltip("If true, the agent will wander through its list of nodes in order, good for patrol type behaviour. If false, the agent will pick a random node each time, good for search behavior")]
-		public bool followSequence;
-
-		[Tooltip("minimum time agent will pause before picking a new node destination")]
-		public float nodeWanderPauseTimeLow = 6f;
-
-		[Tooltip("max time agent will pause before picking a new node destination")]
-		public float nodeWanderPauseTimeHigh = 6f;
-	}
-
-	[Serializable]
-	public class WayPointOptions
-	{
-		[Tooltip("minimum amount of time AI will pause when it reaches a wayPoint")]
-		public float patrolStopTimeLow = 4f;
-
-		[Tooltip("max amount of time AI will pause when it reaches a wayPoint")]
-		public float patrolStopTimeHigh = 8f;
-
-		[Tooltip("this allows you to specify unique stop times for each wayPoint. set to false if not sure.")]
-		public bool useCustomWPTime;
-
-		[Tooltip("if useCustomWPTime is true, use this to set the stop times.")]
-		public int[] wayPointStopTime;
-
-		[Tooltip("this allows AI to trigger scripts at custom wayPoints")]
-		public bool useWayPointScript;
-
-		[Tooltip("the list of wayPoints this AI will patrol")]
-		public Transform[] wayPoints;
 	}
 
 	[Serializable]
@@ -209,12 +166,6 @@ public class node_AIMovement : MonoBehaviour
 	private WanderOptions wanderSettings = new WanderOptions();
 
 	[SerializeField]
-	public NodeWanderOptions nodeWanderSettings = new NodeWanderOptions();
-
-	[SerializeField]
-	public WayPointOptions wayPointSettings = new WayPointOptions();
-
-	[SerializeField]
 	public SpeedOptions speedSettings = new SpeedOptions();
 
 	[SerializeField]
@@ -234,6 +185,9 @@ public class node_AIMovement : MonoBehaviour
 
 	[SerializeField]
 	public bool usePatrolNodes = true;
+
+	[Tooltip("If true, the agent will wander through its list of nodes in order. If false, random.")]
+	public bool followSequence = false;
 
 	[SerializeField]
 	public float safeZoneIgnoreTime = 3f;
@@ -258,9 +212,6 @@ public class node_AIMovement : MonoBehaviour
 	public Transform target;
 
 	[HideInInspector]
-	public Transform targetWayPoint;
-
-	[HideInInspector]
 	public float distance;
 
 	[HideInInspector]
@@ -283,19 +234,11 @@ public class node_AIMovement : MonoBehaviour
 
 	private bool moveToWanderSpot;
 
-	private bool moveToWayPoint;
-
-	private bool returnToGuardSpot;
-
 	private bool timerReset;
 
 	private bool useWander;
 
-	private bool useWayPoints;
-
 	private bool useNodeWander;
-
-	private bool useGuard;
 
 	private bool wokenUp;
 
@@ -303,15 +246,11 @@ public class node_AIMovement : MonoBehaviour
 
 	private float isInFront;
 
-	private float guardSpotDistance;
-
 	private float m_TurnAmount;
 
 	private float m_ForwardAmount;
 
 	private float nodeGoalDistance;
-
-	private float wayPointDistance;
 
 	private float wanderSpotDistance;
 
@@ -341,8 +280,6 @@ public class node_AIMovement : MonoBehaviour
 
 	private int nodeWanderSequenceID;
 
-	private int wayPointIndex;
-
 	private List<Transform> myNodes = new List<Transform>();
 
 	private RaycastHit hit;
@@ -350,8 +287,6 @@ public class node_AIMovement : MonoBehaviour
 	private Rigidbody m_Rigidbody;
 
 	private Transform goalNode;
-
-	private Transform guardSpot;
 
 	private Transform wanderSpot;
 
@@ -365,6 +300,8 @@ public class node_AIMovement : MonoBehaviour
 
 	private Coroutine nodeWanderCoroutine;
 
+	private Coroutine audioFadeCoroutine;
+
 	private bool signal;
 
 	private float ignorePlayerUntilTime;
@@ -375,10 +312,6 @@ public class node_AIMovement : MonoBehaviour
 		{
 			myAnim = GetComponent<node_AIAnimation>();
 		}
-		// if (GameObject.FindGameObjectWithTag("GameController") != null)
-		// {
-		// 	nManager = GameObject.FindGameObjectWithTag("GameController").GetComponent<node_NodeManager>();
-		// }
 		if ((bool)GameObject.FindGameObjectWithTag("Player"))
 		{
 			target = GameObject.FindGameObjectWithTag("Player").transform;
@@ -396,14 +329,8 @@ public class node_AIMovement : MonoBehaviour
 		case AIType.wander:
 			useWander = true;
 			break;
-		case AIType.wayPoints:
-			useWayPoints = true;
-			break;
 		case AIType.nodeWander:
 			useNodeWander = true;
-			break;
-		case AIType.guard:
-			useGuard = true;
 			break;
 		}
 		if (useNodeWander)
@@ -423,15 +350,15 @@ public class node_AIMovement : MonoBehaviour
 			{
 				Debug.LogWarning("No suitable Nodes");
 				useNodeWander = false;
-				useGuard = true;
+				useWander = true;
 			}
 			if (useNodeWander)
 			{
-				if (!nodeWanderSettings.followSequence)
+				if (!followSequence)
 				{
 					goalNode = myNodes[UnityEngine.Random.Range(0, myNodes.Count - 1)];
 				}
-				if (nodeWanderSettings.followSequence)
+				if (followSequence)
 				{
 					goalNode = myNodes[0];
 					nodeWanderSequenceID = 0;
@@ -441,46 +368,8 @@ public class node_AIMovement : MonoBehaviour
 				agent.SetDestination(goalNode.position);
 			}
 		}
-		if (useWayPoints)
-		{
-			if (!wayPointSettings.useWayPointScript && wayPointSettings.wayPoints.Length != 0)
-			{
-				targetWayPoint = wayPointSettings.wayPoints[0];
-				wayPointIndex = 0;
-				agent.speed = speedSettings.walkSpeed;
-				if (wayPointSettings.wayPointStopTime.Length != wayPointSettings.wayPoints.Length)
-				{
-					wayPointSettings.useCustomWPTime = false;
-				}
-				moveToWayPoint = true;
-				agent.SetDestination(targetWayPoint.position);
-			}
-			if (wayPointSettings.useWayPointScript)
-			{
-				Debug.LogWarning("node_ConditionalWayPointHandler missing. Using wander mode.");
-				useWander = true;
-				moveToWayPoint = false;
-				useWayPoints = false;
-				wayPointSettings.useCustomWPTime = false;
-			}
-			else if (wayPointSettings.wayPoints.Length == 0)
-			{
-				Debug.LogWarning("no way points found. Agent set to wander mode.");
-				useWander = true;
-				moveToWayPoint = false;
-				useWayPoints = false;
-				wayPointSettings.useCustomWPTime = false;
-			}
-			if (wayPointSettings.useWayPointScript)
-			{
-				wayPointSettings.useCustomWPTime = false;
-			}
-		}
 		if (useWander)
 		{
-			moveToWayPoint = false;
-			useWayPoints = false;
-			useGuard = false;
 			useNodeWander = false;
 			agent.speed = speedSettings.walkSpeed;
 			GameObject gameObject = new GameObject();
@@ -515,22 +404,13 @@ public class node_AIMovement : MonoBehaviour
 			}
 			if (timeOutClock >= findWanderSpotTimeOutMax)
 			{
-				Debug.Log("valid wander spot could not be found. Agent using guard mode.");
+				Debug.Log("valid wander spot could not be found. Agent using nodeWander mode.");
 				useWander = false;
-				useGuard = true;
+				useNodeWander = true;
 			}
 		}
-		if (useGuard)
-		{
-			GameObject gameObject2 = new GameObject();
-			gameObject2.name = base.name + " guard Spot";
-			gameObject2.transform.position = base.transform.position;
-			gameObject2.transform.rotation = base.transform.rotation;
-			guardSpot = gameObject2.transform;
-			agent.speed = 0f;
-		}
 		setKinematic(true);
-		agent.updateRotation = false; // Отключаем вращение агента, будем крутить скриптом
+		agent.updateRotation = false;
 		agent.updatePosition = true;
 		
 		m_Rigidbody = GetComponent<Rigidbody>();
@@ -559,33 +439,6 @@ public class node_AIMovement : MonoBehaviour
 			if (advancedSettings.debugTarget)
 			{
 				Debug.DrawLine(detectionSettings.myEyes.position, goalNode.position, advancedSettings.debugColor);
-			}
-		}
-		if (useGuard && returnToGuardSpot)
-		{
-			guardSpotDistance = Vector3.Distance(base.transform.position, guardSpot.position);
-			if (guardSpotDistance <= agent.stoppingDistance + advancedSettings.stopDistanceAdjust && agent.speed != 0f)
-			{
-				guardSpotHit();
-			}
-			if (advancedSettings.debugTarget)
-			{
-				Debug.DrawLine(detectionSettings.myEyes.position, guardSpot.position, advancedSettings.debugColor);
-			}
-		}
-		if (moveToWayPoint)
-		{
-			if (!wayPointSettings.useWayPointScript)
-			{
-				wayPointDistance = Vector3.Distance(base.transform.position, targetWayPoint.position);
-			}
-			if (!wayPointSettings.useWayPointScript && wayPointDistance <= agent.stoppingDistance + advancedSettings.stopDistanceAdjust && agent.speed != 0f)
-			{
-				StartCoroutine(wayPointHit(UnityEngine.Random.Range(wayPointSettings.patrolStopTimeLow, wayPointSettings.patrolStopTimeHigh), false));
-			}
-			if (advancedSettings.debugTarget)
-			{
-				Debug.DrawLine(detectionSettings.myEyes.position, targetWayPoint.position, advancedSettings.debugColor);
 			}
 		}
 		if (moveToWanderSpot)
@@ -696,10 +549,18 @@ public class node_AIMovement : MonoBehaviour
 				RevertPatrolNodeEffects();
 			}
 
-			if (chaseAudio != null && !chaseAudio.isPlaying)
+			if (chaseAudio != null)
 			{
+				if (audioFadeCoroutine != null)
+				{
+					StopCoroutine(audioFadeCoroutine);
+					audioFadeCoroutine = null;
+				}
+				if (!chaseAudio.isPlaying)
+				{
+					chaseAudio.Play();
+				}
 				chaseAudio.volume = maxAudioVolume;
-				chaseAudio.Play();
 			}
 
 			if (advancedSettings.debugTarget)
@@ -817,14 +678,6 @@ public class node_AIMovement : MonoBehaviour
 		timerReset = false;
 	}
 
-	public void guardSpotHit()
-	{
-		agent.speed = 0f;
-		returnToGuardSpot = false;
-		rotationTarget = guardSpot.forward;
-		adjustRotation = true;
-	}
-
 	private IEnumerator lostTrailTimeOut()
 	{
 		yield return new WaitForSeconds(detectionSettings.searchTime);
@@ -841,8 +694,6 @@ public class node_AIMovement : MonoBehaviour
 
 	public void lookAtPlayer()
 	{
-		// Пусто. Мы больше не крутим модельку myBody отдельно, так как это ломает анимации (бег боком).
-		// Вращение к игроку теперь обрабатывается через Move(..., forceTurnToPlayer: true).
 	}
 
 	public void Move(Vector3 move, bool forceTurnToPlayer)
@@ -863,22 +714,19 @@ public class node_AIMovement : MonoBehaviour
 		}
 		else
 		{
-			// Маппинг скорости для старого аниматора (0 = стоит, 0.5 = ходьба, 1 = бег)
-			// У NavMeshAgent скорости 2.0 и 3.5, а аниматору нужны 0.5 и 1.0
 			float animForward = 0f;
 			if (desiredSpeed > 0.1f || agent.velocity.magnitude > 0.1f)
 			{
-				if (agent.speed <= speedSettings.walkSpeed + 0.1f)
+				if (chase)
 				{
-					animForward = 0.5f; // Анимация ходьбы
+					animForward = 1.0f;
 				}
 				else
 				{
-					animForward = 1.0f; // Анимация бега
+					animForward = 0.5f;
 				}
 			}
 			
-			// Если движемся вперед (localMove.z > 0), задаем расчитанную скорость
 			m_ForwardAmount = localMove.z > 0.1f ? animForward : 0f;
 		}
 		
@@ -886,8 +734,6 @@ public class node_AIMovement : MonoBehaviour
 		
 		if (myAnim != null)
 		{
-			// Вместо сложных боковых анимаций (m_TurnAmount), передаем только скорость вперед, 
-			// так как боковые убрали. Для этого передаём m_TurnAmount = 0
 			myAnim.UpdateAnimator(m_ForwardAmount, 0f, speedSettings.smoothMove, speedSettings.m_AnimSpeedMultiplier);
 		}
 	}
@@ -904,7 +750,7 @@ public class node_AIMovement : MonoBehaviour
 		RevertPatrolNodeEffects();
 		ApplyPatrolNodeEffects(data);
 		
-		float wait = 3.5f; // default
+		float wait = 3.5f;
 		if (data != null)
 		{
 			wait = (data.nodeType == PatrolNode.NodeType.Special) ? data.freezeSeconds : data.normalStandSeconds;
@@ -949,9 +795,7 @@ public class node_AIMovement : MonoBehaviour
 		{
 			InvokeRepeating("alertOthers", 0.1f, UnityEngine.Random.Range(1f, 1.5f));
 		}
-		moveToWayPoint = false;
 		moveToWanderSpot = false;
-		returnToGuardSpot = false;
 		moveToGoalNode = false;
 		cautious = false;
 		adjustRotation = false;
@@ -959,6 +803,26 @@ public class node_AIMovement : MonoBehaviour
 		agent.speed = speedSettings.chaseSpeed;
 		chase = true;
 		StartCoroutine("updatePlayerPos");
+	}
+
+	private IEnumerator FadeOutAudio()
+	{
+		if (chaseAudio == null) yield break;
+		
+		float startVolume = chaseAudio.volume;
+		float fadeDuration = 1.5f;
+		float timer = 0f;
+		
+		while (timer < fadeDuration)
+		{
+			timer += Time.deltaTime;
+			chaseAudio.volume = Mathf.Lerp(startVolume, 0f, timer / fadeDuration);
+			yield return null;
+		}
+		
+		chaseAudio.volume = 0f;
+		chaseAudio.Stop();
+		audioFadeCoroutine = null;
 	}
 
 	private IEnumerator playerEscaped()
@@ -970,7 +834,11 @@ public class node_AIMovement : MonoBehaviour
 		
 		if (chaseAudio != null && chaseAudio.isPlaying)
 		{
-			chaseAudio.Stop();
+			if (audioFadeCoroutine != null)
+			{
+				StopCoroutine(audioFadeCoroutine);
+			}
+			audioFadeCoroutine = StartCoroutine(FadeOutAudio());
 		}
 
 		campLastKnownSpot = true;
@@ -980,30 +848,20 @@ public class node_AIMovement : MonoBehaviour
 		cautious = false;
 		if (useNodeWander)
 		{
-			if (!nodeWanderSettings.followSequence)
+			if (!followSequence)
 			{
 				goalNode = myNodes[UnityEngine.Random.Range(0, myNodes.Count - 1)];
 			}
-			if (nodeWanderSettings.followSequence)
+			if (followSequence)
 			{
 				goalNode = myNodes[nodeWanderSequenceID];
 			}
 			moveToGoalNode = true;
 			agent.SetDestination(goalNode.position);
 		}
-		if (useWayPoints && !wayPointSettings.useWayPointScript)
-		{
-			moveToWayPoint = true;
-			StartCoroutine(wayPointHit(UnityEngine.Random.Range(wayPointSettings.patrolStopTimeLow, wayPointSettings.patrolStopTimeHigh), true));
-		}
 		if (useWander)
 		{
 			moveToWanderSpot = true;
-		}
-		if (useGuard)
-		{
-			returnToGuardSpot = true;
-			agent.SetDestination(guardSpot.position);
 		}
 		if (useWander)
 		{
@@ -1040,7 +898,6 @@ public class node_AIMovement : MonoBehaviour
 			}
 		}
 		
-		// Главный Rigidbody должен быть isKinematic = true, чтобы NavMeshAgent нормально работал и не прыгал
 		Rigidbody mainRb = GetComponent<Rigidbody>();
 		if (mainRb != null)
 		{
@@ -1053,7 +910,6 @@ public class node_AIMovement : MonoBehaviour
 	{
 		Vector3 dest = target.position;
 
-		// Raycast downwards to find the actual floor beneath the player
 		RaycastHit[] hits = Physics.RaycastAll(target.position + Vector3.up * 0.5f, Vector3.down, 10f, interactionLayers);
 		float closestDist = float.MaxValue;
 		bool foundFloor = false;
@@ -1074,7 +930,6 @@ public class node_AIMovement : MonoBehaviour
 		if (foundFloor)
 		{
 			NavMeshHit navHit;
-			// Sample nearest navmesh strictly on the floor we found
 			if (NavMesh.SamplePosition(floorPoint, out navHit, 3f, NavMesh.AllAreas))
 			{
 				dest = navHit.position;
@@ -1111,7 +966,7 @@ public class node_AIMovement : MonoBehaviour
 			{
 				adjustRotation = false;
 				rotationTarget = rt.forward;
-				agent.Warp(node.transform.position); // Force snap position to prevent sliding
+				agent.Warp(node.transform.position);
 			}
 		}
 		if (node.disableOnArrive != null)
@@ -1194,7 +1049,6 @@ public class node_AIMovement : MonoBehaviour
 			node.specialAudio.Stop();
 		}
 		
-		// Fallback brute force: ensure all SMRs on the body are enabled when reverting
 		var allSmrs = GetComponentsInChildren<SkinnedMeshRenderer>(true);
 		foreach (var smr in allSmrs)
 		{
@@ -1222,12 +1076,21 @@ public class node_AIMovement : MonoBehaviour
 		
 		if (chaseAudio != null && chaseAudio.isPlaying)
 		{
-			chaseAudio.Stop();
+			if (audioFadeCoroutine != null)
+			{
+				StopCoroutine(audioFadeCoroutine);
+			}
+			audioFadeCoroutine = StartCoroutine(FadeOutAudio());
 		}
 
 		agent.speed = 0f;
 		agent.isStopped = true;
 		ignorePlayerUntilTime = Time.time + safeZoneIgnoreTime;
+		
+		Animator anim = GetComponent<Animator>();
+		if (anim == null) anim = GetComponentInChildren<Animator>();
+		if (anim != null) anim.SetTrigger("E_Lost");
+
 		StartCoroutine(SafeZoneResume());
 	}
 
@@ -1236,9 +1099,28 @@ public class node_AIMovement : MonoBehaviour
 		yield return new WaitForSeconds(safeZoneIgnoreTime);
 		agent.isStopped = false;
 		agent.speed = speedSettings.walkSpeed;
+		cautious = false;
+
+		if (useNodeWander && myNodes.Count > 0)
+		{
+			if (!followSequence)
+			{
+				goalNode = myNodes[UnityEngine.Random.Range(0, myNodes.Count)];
+			}
+			else
+			{
+				goalNode = myNodes[nodeWanderSequenceID];
+			}
+			moveToGoalNode = true;
+			agent.SetDestination(goalNode.position);
+		}
+		else if (useWander)
+		{
+			moveToWanderSpot = true;
+		}
 	}
 
-	public void StopHunt(float ignoreTime)
+	public void StopHunt(float ignoreTime, bool immediateAudioStop = false)
 	{
 		StopAllCoroutines();
 		CancelInvoke();
@@ -1247,15 +1129,28 @@ public class node_AIMovement : MonoBehaviour
 		
 		if (chaseAudio != null && chaseAudio.isPlaying)
 		{
-			chaseAudio.Stop();
+			if (audioFadeCoroutine != null)
+			{
+				StopCoroutine(audioFadeCoroutine);
+			}
+			if (immediateAudioStop)
+			{
+				chaseAudio.Stop();
+			}
+			else
+			{
+				audioFadeCoroutine = StartCoroutine(FadeOutAudio());
+			}
 		}
 
 		agent.isStopped = true;
+		agent.ResetPath();
+		agent.velocity = Vector3.zero;
 		agent.speed = 0f;
 		ignorePlayerUntilTime = Time.time + ignoreTime;
 	}
 
-	public void ResetAfterCatch(float ignoreTime)
+	public void ResetAfterCatch(float ignoreTime, bool immediateAudioStop = false)
 	{
 		chase = false;
 		attackOk = false;
@@ -1265,7 +1160,18 @@ public class node_AIMovement : MonoBehaviour
 		
 		if (chaseAudio != null && chaseAudio.isPlaying)
 		{
-			chaseAudio.Stop();
+			if (audioFadeCoroutine != null)
+			{
+				StopCoroutine(audioFadeCoroutine);
+			}
+			if (immediateAudioStop)
+			{
+				chaseAudio.Stop();
+			}
+			else
+			{
+				audioFadeCoroutine = StartCoroutine(FadeOutAudio());
+			}
 		}
 
 		agent.isStopped = false;
@@ -1337,46 +1243,9 @@ public class node_AIMovement : MonoBehaviour
 		}
 		if (timeOutClock >= findWanderSpotTimeOutMax)
 		{
-			Debug.Log("valid wander spot could not be found. Agent using guard mode.");
+			Debug.Log("valid wander spot could not be found. Agent using nodeWander mode.");
 			useWander = false;
-			useGuard = true;
-			GameObject gameObject = new GameObject();
-			gameObject.name = base.name + " guard Spot";
-			gameObject.transform.position = base.transform.position;
-			gameObject.transform.rotation = base.transform.rotation;
-			guardSpot = gameObject.transform;
-			agent.speed = 0f;
-		}
-		agent.speed = speedSettings.walkSpeed;
-	}
-
-	public IEnumerator wayPointHit(float wayPointWaitTime, bool resumePatrol)
-	{
-		agent.speed = 0f;
-		if (wayPointSettings.useCustomWPTime)
-		{
-			yield return new WaitForSeconds(wayPointSettings.wayPointStopTime[wayPointIndex]);
-		}
-		if (!resumePatrol)
-		{
-			wayPointIndex++;
-		}
-		if (wayPointIndex >= wayPointSettings.wayPoints.Length)
-		{
-			wayPointIndex = 0;
-		}
-		if (!wayPointSettings.useCustomWPTime && !wayPointSettings.useWayPointScript)
-		{
-			yield return new WaitForSeconds(wayPointWaitTime);
-		}
-		if (!wayPointSettings.useWayPointScript)
-		{
-			targetWayPoint = wayPointSettings.wayPoints[wayPointIndex];
-			agent.SetDestination(targetWayPoint.position);
-		}
-		if (wayPointSettings.useWayPointScript)
-		{
-			// Not supported
+			useNodeWander = true;
 		}
 		agent.speed = speedSettings.walkSpeed;
 	}

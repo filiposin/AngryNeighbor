@@ -32,12 +32,7 @@ public class node_AIAnimation : MonoBehaviour
 
 	public void OnAnimatorMove()
 	{
-		// if (Time.deltaTime > 0f)
-		// {
-		// 	Vector3 velocity = m_Animator.deltaPosition * aiM.speedSettings.m_MoveSpeedMultiplier / Time.deltaTime;
-		// 	velocity.y = m_Rigidbody.velocity.y;
-		// 	m_Rigidbody.velocity = velocity;
-		// }
+		// не трогайте этот метод блять! он нужен чтобы сосед через root motion не толкал себя вперед и не ускорялся
 	}
 
 	public void UpdateAnimator(float fAmount, float tAmount, float smooth, float animSpeed)

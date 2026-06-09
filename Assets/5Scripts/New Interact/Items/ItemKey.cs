@@ -5,14 +5,12 @@ using UnityEngine;
 public class ItemKey : ItemBase
 {
     [SerializeField] private LayerMask doorMask;
-    [SerializeField] private ItemChecker checker;
     [SerializeField] private bool consumeOnUse = true;
     private PlayerItemHandler playerItemHandler;
 
     public override void OnPickup(GameObject holder)
     {
         base.OnPickup(holder);
-        if (checker != null) checker.DeleteChecked();
     }
 
     public override void OnUse()

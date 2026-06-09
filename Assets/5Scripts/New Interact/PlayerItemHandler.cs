@@ -151,7 +151,7 @@ public class PlayerItemHandler : MonoBehaviour
         Vector3 origin = camTransform.position;
         Vector3 dir = camTransform.forward;
 
-        int hits = Physics.RaycastNonAlloc(origin, dir, raycastHits, interactDistance, interactMask, QueryTriggerInteraction.Ignore);
+        int hits = Physics.RaycastNonAlloc(origin, dir, raycastHits, interactDistance, interactMask, QueryTriggerInteraction.Collide);
         if (hits <= 0) return false;
 
         bestHit = raycastHits[0];
@@ -772,15 +772,10 @@ public class PlayerItemHandler : MonoBehaviour
     public void OnInteractButton() => TryInteractOrPickup();
     public void OnInventoryButton() => ToggleInventoryUI();
 
-    // ── Accessors для PlayerCatcher (TpBack mode) ──────────────────────
     public Inventory GetInventory()           => inventory;
     public GameObject[] GetSlotModels()       => slotModels;
     public GameObject[] GetBackpackModels()   => backpackModels;
 
-    /// <summary>
-    /// Очищает инвентарь и held-ссылки без физического выброса предметов.
-    /// Используется в режиме TpBack, когда объекты уже возвращены вручную.
-    /// </summary>
     public void ClearAllInventory()
     {
         if (inventory == null) return;

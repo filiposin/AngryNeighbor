@@ -7,7 +7,7 @@ public class PlayerCatcher : MonoBehaviour
     public enum ItemDeathMode
     {
         Drop,    // Предметы выпадают как обычно
-        TpBack   // Предметы возвращаются на место спавна
+        TpBack
     }
 
     [Header("Settings")]
@@ -19,7 +19,6 @@ public class PlayerCatcher : MonoBehaviour
     public bool playCatchAnimation = true;
 
         [Header("Item Death Mode")]
-    [Tooltip("Drop — предметы выпадают. TpBack — предметы возвращаются на место спавна.")]
     public ItemDeathMode itemDeathMode = ItemDeathMode.Drop;
 
     [Header("Enemy AI")]
@@ -35,7 +34,6 @@ public class PlayerCatcher : MonoBehaviour
         if (enemyMovement == null) enemyMovement = GetComponentInParent<node_AIMovement>();
     }
 
-    // Попробуем автоматически подставить скрипт анимаций, если поле не заполнено в инспекторе
     if (aiAnimation == null)
     {
         if (enemyMovement != null)
@@ -82,33 +80,40 @@ public class PlayerCatcher : MonoBehaviour
     private IEnumerator CatchRoutine(FP_Controller player)
 {
     bool playCatchSequence = playCatchAnimation;
+    bool immediateAudioStop = playCatchAnimation || playCatchSound;
 
-    // 1. БЛОКИРУЕМ СТРЕЛЬБУ СРАЗУ (Фикс бага с убийством во время скримера)
     if (PlayerItemHandler.inst != null)
     {
-        PlayerItemHandler.inst.UnequipCurrent(); // Убираем предмет из рук
-        PlayerItemHandler.inst.enabled = false;  // Полностью отключаем скрипт рук
+        PlayerItemHandler.inst.UnequipCurrent();
+        PlayerItemHandler.inst.enabled = false;
     }
 
-    // 2. ОСТАНАВЛИВАЕМ ИИ
     if (enemyMovement != null)
     {
         if (playCatchSequence)
         {
-            enemyMovement.StopHunt(999f);
+            enemyMovement.StopHunt(999f, immediateAudioStop);
             NavMeshAgent agent = enemyMovement.GetComponent<NavMeshAgent>();
             if (agent != null)
             {
                 agent.isStopped = true;
+                agent.ResetPath();
+                agent.velocity = Vector3.zero;
+            }
+
+            Vector3 lookDir = player.transform.position - enemyMovement.transform.position;
+            lookDir.y = 0;
+            if (lookDir.sqrMagnitude > 0.001f)
+            {
+                enemyMovement.transform.rotation = Quaternion.LookRotation(lookDir);
             }
         }
         else
         {
-            enemyMovement.ResetAfterCatch(0.5f);
+            enemyMovement.ResetAfterCatch(0.5f, immediateAudioStop);
         }
     }
 
-    // 3. БЛОКИРУЕМ ДВИЖЕНИЕ ИГРОКА
     player.canControl = false;
     Rigidbody playerRb = player.GetComponent<Rigidbody>();
     if (playerRb != null)
@@ -118,28 +123,24 @@ public class PlayerCatcher : MonoBehaviour
         playerRb.isKinematic = true;
     }
 
-    // 4. ПОВОРАЧИВАЕМ КАМЕРУ
     FP_CameraLook camLook = player.GetComponentInChildren<FP_CameraLook>();
     if (playCatchSequence && camLook != null && headTransform != null)
     {
         camLook.LookTo(headTransform);
     }
 
-    // 5. ЗВУК
     if (playCatchSound && audioSource != null && catchClip != null)
     {
         audioSource.PlayOneShot(catchClip);
     }
 
-    // 5.1 Проигрываем анимацию "Catch" через явно назначенное поле aiAnimation
     if (playCatchSequence && aiAnimation != null)
     {
         Animator anim = aiAnimation.GetComponent<Animator>();
-        if (anim != null) anim.SetTrigger("Catch");
+        if (anim != null) anim.SetTrigger("E_Catch");
     }
     else if (playCatchSequence)
     {
-        // fallback: попробуем найти Animator и поставить триггер напрямую
         Animator fallback = null;
         if (enemyMovement != null)
             fallback = enemyMovement.GetComponent<Animator>() ?? enemyMovement.GetComponentInChildren<Animator>();
@@ -148,17 +149,19 @@ public class PlayerCatcher : MonoBehaviour
             fallback = GetComponent<Animator>() ?? GetComponentInChildren<Animator>();
 
         if (fallback != null)
-            fallback.SetTrigger("Catch");
+            fallback.SetTrigger("E_Catch");
     }
 
-    // 6. ЖДЕМ СЦЕНКУ
+    if (playCatchSequence && BlackCock.instance != null)
+    {
+        BlackCock.instance.PlayDarkenAnimation();
+    }
+
     if (playCatchSequence)
         yield return new WaitForSeconds(1.5f);
 
-        // 7. ОБРАБАТЫВАЕМ ПРЕДМЕТЫ
     HandleItemsOnDeath();
 
-    // 8. РЕСПАВН
     if (respawnPoint != null)
     {
         player.transform.position = respawnPoint.position;
@@ -170,10 +173,9 @@ public class PlayerCatcher : MonoBehaviour
             camLook.StopLook();
         }
     }
-    if (BlackCock.instance != null) BlackCock.instance.PlayAnimation();
+    if (BlackCock.instance != null) BlackCock.instance.PlayLightenAnimation();
     yield return new WaitForSeconds(0.1f);
     
-    // 9. ВОЗВРАЩАЕМ УПРАВЛЕНИЕ
     if (playerRb != null)
     {
         CharacterController characterController = player.GetComponent<CharacterController>();
@@ -183,11 +185,8 @@ public class PlayerCatcher : MonoBehaviour
     }
     player.canControl = true;
     
-    // Включаем руки обратно
     if (PlayerItemHandler.inst != null) PlayerItemHandler.inst.enabled = true;
 
-        // 10. СБРОС ИИ — полный сброс памяти об игроке + игнор-таймер,
-    //     чтобы сосед не возобновил погоню сразу после респавна.
     if (enemyMovement != null)
     {
         NavMeshAgent agent = enemyMovement.GetComponent<NavMeshAgent>();
@@ -195,6 +194,13 @@ public class PlayerCatcher : MonoBehaviour
         {
             agent.isStopped = false;
         }
+
+        Animator resetAnim = null;
+        if (aiAnimation != null) resetAnim = aiAnimation.GetComponent<Animator>();
+        if (resetAnim == null) resetAnim = enemyMovement.GetComponent<Animator>() ?? enemyMovement.GetComponentInChildren<Animator>();
+        if (resetAnim == null) resetAnim = GetComponent<Animator>() ?? GetComponentInChildren<Animator>();
+        if (resetAnim != null) resetAnim.SetTrigger("E_Idle");
+
         enemyMovement.ResetAfterCatch(0.5f);
     }
 
@@ -202,9 +208,6 @@ public class PlayerCatcher : MonoBehaviour
 }
 
 
-        // ─────────────────────────────────────────────
-    //  Обработка предметов при смерти
-    // ─────────────────────────────────────────────
     private void HandleItemsOnDeath()
     {
         if (PlayerItemHandler.inst == null)
@@ -225,9 +228,6 @@ public class PlayerCatcher : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Возвращает все предметы инвентаря на их позицию спавна и очищает инвентарь.
-    /// </summary>
     private void ReturnAllItemsToSpawn()
     {
         var handler   = PlayerItemHandler.inst;
@@ -261,6 +261,12 @@ public class PlayerCatcher : MonoBehaviour
         if (obj == null) return;
 
         var itemBase = obj.GetComponent<ItemBase>();
+        if (itemBase != null && itemBase.Definition != null && !itemBase.Definition.tpBackAfterDeath)
+        {
+            Destroy(obj);
+            return;
+        }
+
         if (itemBase != null) itemBase.RestoreLayer();
 
         var worldItem = obj.GetComponent<WorldItem>();

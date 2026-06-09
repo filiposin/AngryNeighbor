@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 1603980615144749142}
   - component: {fileID: 3129562804670994304}
   - component: {fileID: -2418303046623998573}
+  - component: {fileID: 3692882442871556334}
   m_Layer: 7
   m_Name: Wheel
   m_TagString: Untagged
@@ -29,7 +30,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1007846732837914004}
-  m_LocalRotation: {x: 1, y: -0, z: -0, w: 0}
+  m_LocalRotation: {x: 1, y: 0, z: 0, w: 0}
   m_LocalPosition: {x: 6.646, y: 1.237, z: 56.403}
   m_LocalScale: {x: 1.491469, y: 1.5015526, z: 1.5000002}
   m_ConstrainProportionsScale: 0
@@ -45,7 +46,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1007846732837914004}
-  m_Mesh: {fileID: 4300000, guid: f16e80dde83dce84ca8dcf4c0fe88219, type: 2}
+  m_Mesh: {fileID: 1302168610388005137, guid: 31cc7f14a80ea3f4dba2c4538daaddd9, type: 3}
 --- !u!23 &1007846732837916482
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -143,6 +144,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hitId: 
+--- !u!65 &3692882442871556334
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1007846732837914004}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 0.29759476, y: 0.20166616, z: 0.33532965}
+  m_Center: {x: -0.0042805886, y: -0.023124125, z: 0.0016797382}
 --- !u!1 &1007846732837914053
 GameObject:
   m_ObjectHideFlags: 0
@@ -154,7 +168,6 @@ GameObject:
   - component: {fileID: 1007846732837912963}
   - component: {fileID: 1007846732837916136}
   - component: {fileID: 1007846732837916539}
-  - component: {fileID: 1007846732837915948}
   m_Layer: 0
   m_Name: Wheel_part
   m_TagString: Untagged
@@ -227,17 +240,3 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &1007846732837915948
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1007846732837914053}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 4
-  m_Convex: 1
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 5d4668d6b91e7f646ab993db539f86c7, type: 2}
