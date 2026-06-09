@@ -2,7 +2,7 @@
   <img src=".media/logo.gif" width="700" alt="Logo">
 </p>
 
-# Angry Neighbor Recode
+<h1 align="center">Angry Neighbor Recode</h1>
 
 This repository contains a complete, from-scratch rewrite of the game Angry Neighbor, built specifically for modding. This project is not a decompilation of the original code, it is an optimized, self-coded implementation designed to preserve the original *vibe* of the game while providing a better development environment.
 
