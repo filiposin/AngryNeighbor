@@ -104,3 +104,6 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+.vscode/
+Angry Neighbor Recode_BurstDebugInformation/
+AnRecodeV3Release_mapping.txt
