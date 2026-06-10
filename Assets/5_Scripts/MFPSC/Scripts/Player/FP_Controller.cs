@@ -32,7 +32,7 @@ public class FP_Controller : MonoBehaviour, ICrouchState
     public bool canCrouch = true;
     public bool canJump = true;
     public bool canRun = true;
-    
+
     public bool onLadder = false;
     public float climbSpeed = 3.0f;
 
@@ -88,7 +88,7 @@ public class FP_Controller : MonoBehaviour, ICrouchState
 
     // Новые поля для контроля проверки стояния
     private bool prevIsCrouching = false;
-    private bool spaceAboveClear = true; 
+    private bool spaceAboveClear = true;
 
     // --- CURSOR LOCK (PC ONLY) ---
     [SerializeField] private bool lockCursorOnPC = true;
@@ -96,7 +96,7 @@ public class FP_Controller : MonoBehaviour, ICrouchState
     private bool cursorLocked = false;        // фактическое состояние
     private bool pcWantsLock = true;          // то, чего хочет игрок (toggle по Esc)
     private bool lastUseMobileInput = false;  // чтобы ловить переключение мобилка/ПК
-    
+
     public bool IsCursorForcedUnlocked { get; private set; } = false;
 
     public void ForceCursorUnlock(bool force)
@@ -111,7 +111,7 @@ public class FP_Controller : MonoBehaviour, ICrouchState
             HandlePCCursorLock();
         }
     }
-    
+
     void Awake()
     {
         //Application.targetFrameRate = bublicfps;
@@ -123,10 +123,10 @@ public class FP_Controller : MonoBehaviour, ICrouchState
         footSteps = GetComponent<FP_FootSteps>();
         DisableDuplicateBodyColliders();
         ConfigureAttachedRigidbody();
-        
+
     }
-    
-    void Start() 
+
+    void Start()
     {
         if (!playerInput.UseMobileInput && lockCursorOnPC)
         {
@@ -151,7 +151,7 @@ public class FP_Controller : MonoBehaviour, ICrouchState
         else
             camTransform = Camera.main.transform;
     }
-    
+
     void CalculateMovement()
     {
         ConfigureAttachedRigidbody();
@@ -177,7 +177,7 @@ public class FP_Controller : MonoBehaviour, ICrouchState
         // -----------------------------------
 
         inputModifyFactor = (inputX != 0.0F && inputZ != 0.0F)? 0.7071F : 1.0F;
-        
+
         if (onLadder)
         {
             LadderMovement();
@@ -186,10 +186,10 @@ public class FP_Controller : MonoBehaviour, ICrouchState
 
         if (grounded) {
             sliding = false;
-            
+
             // --- НОВАЯ СИСТЕМА СКОЛЬЖЕНИЯ ---
             Vector3 rayStart = myTransform.position + Vector3.up * 0.1f;
-            float realRayDistance = rayDistance + 0.1f; 
+            float realRayDistance = rayDistance + 0.1f;
 
             bool isEdgeSliding = false;
             Vector3 edgeSlideDir = Vector3.zero;
@@ -197,39 +197,39 @@ public class FP_Controller : MonoBehaviour, ICrouchState
             if (enableSliding)
             {
                 // 1. Проверяем, стоим ли мы на наклонной поверхности (склоне)
-                if (Physics.Raycast(rayStart, Vector3.down, out hit, realRayDistance)) 
+                if (Physics.Raycast(rayStart, Vector3.down, out hit, realRayDistance))
                 {
                     float angle = Vector3.Angle(hit.normal, Vector3.up);
                     // Игнорируем почти вертикальные стены
-                    if (angle > slideLimit && angle < slideMaxAngle && CanSlide()) 
+                    if (angle > slideLimit && angle < slideMaxAngle && CanSlide())
                     {
                         sliding = true;
                         hitNormal = hit.normal;
                     }
                 }
                 // 2. Если луч не нашел землю, НО контроллер считается grounded, значит центр в воздухе
-                else 
+                else
                 {
-                    if (CanSlide()) 
+                    if (CanSlide())
                     {
                         sliding = true;
                         isEdgeSliding = true;
 
                         // Отталкиваем игрока от точки контакта с выступом
                         edgeSlideDir = myTransform.position - contactPoint;
-                        edgeSlideDir.y = 0; 
-                        
-                        if (edgeSlideDir.sqrMagnitude < 0.01f) 
+                        edgeSlideDir.y = 0;
+
+                        if (edgeSlideDir.sqrMagnitude < 0.01f)
                             edgeSlideDir = myTransform.forward;
-                            
+
                         edgeSlideDir.Normalize();
                     }
                 }
             }
 
             speed = isCrouching || !CanStand() ? crouchSpeed : run ? canRun ? runSpeed : walkSpeed : walkSpeed;
-            
-            if (sliding) 
+
+            if (sliding)
             {
                 Vector3 inputDir = new Vector3(inputX * inputModifyFactor, 0, inputZ * inputModifyFactor);
                 inputDir = myTransform.TransformDirection(inputDir) * speed;
@@ -237,22 +237,38 @@ public class FP_Controller : MonoBehaviour, ICrouchState
                 if (isEdgeSliding)
                 {
                     // Плавно толкаем наружу от края
-                    moveDirection = edgeSlideDir * (walkSpeed * edgePushMultiplier);
-                    
-                    // Тянем вниз, чтобы игрок не подпрыгивал
-                    moveDirection.y = -gravity * edgeGravityMultiplier;
+                    moveDirection = edgeSlideDir * (slideSpeed * 0.5f);
 
-                    // Учитываем инпут только если игрок шагает В ПРОПАСТЬ (помогает быстрее спрыгнуть)
-                    if (Vector3.Dot(inputDir, edgeSlideDir) > 0)
+                    // Тянем вниз, пока есть опора
+                    moveDirection.y = -5f;
+
+                    // УМНАЯ ПРОВЕРКА: ОКНО ИЛИ СТЕНА?
+                    bool wallAhead = false;
+                    if (inputDir.sqrMagnitude > 0.01f)
                     {
-                        moveDirection.x += inputDir.x * edgeInputInfluence;
-                        moveDirection.z += inputDir.z * edgeInputInfluence;
+                        // Пускаем луч от центра тела в сторону, куда хочет идти игрок
+                        Vector3 checkOrigin = controller.bounds.center;
+                        Vector3 checkDir = inputDir.normalized;
+
+                        // Проверяем, есть ли преграда прямо по курсу (игнорируя триггеры)
+                        wallAhead = Physics.Raycast(checkOrigin, checkDir, controller.radius + 0.2f, ~0, QueryTriggerInteraction.Ignore);
                     }
 
-                    // СЕКРЕТ ПРЫЖКОВ ЗДЕСЬ: отключаем управление в воздухе при срыве!
-                    // Иначе после потери земли код контроля в воздухе (airControl) 
-                    // моментально вернет вас обратно на выступ, вызывая "баунс" 60 раз в секунду.
-                    playerControl = false; 
+                    if (!wallAhead)
+                    {
+                        // Впереди ПУСТО (окно, дверь или мы идем вдоль обрыва) -> разрешаем движение
+                        moveDirection.x += inputDir.x;
+                        moveDirection.z += inputDir.z;
+
+                        // Сохраняем управление, если игрок активно движется
+                        playerControl = (inputDir.sqrMagnitude > 0.01f);
+                    }
+                    else
+                    {
+                        // Впереди СТЕНА! Инпут вперед только мешает.
+                        // Не добавляем его к moveDirection, чтобы игрок плавно съехал наружу и вниз.
+                        playerControl = false;
+                    }
                 }
                 else
                 {
@@ -262,9 +278,9 @@ public class FP_Controller : MonoBehaviour, ICrouchState
                     Vector3.OrthoNormalize(ref hitNormal, ref moveDirection);
                     moveDirection *= slideSpeed;
                     moveDirection += inputDir * slopeInputInfluence;
-                    
+
                     // На обычных склонах оставляем немного управления
-                    playerControl = true; 
+                    playerControl = true;
                 }
             }
             else
@@ -274,18 +290,18 @@ public class FP_Controller : MonoBehaviour, ICrouchState
                 moveDirection = myTransform.TransformDirection(moveDirection) * speed;
                 playerControl = true;
             }
-            
+
             if (!jump)
                 jumpTimer++;
-            else if (canJump && jumpTimer >= antiBunnyHopFactor) 
+            else if (canJump && jumpTimer >= antiBunnyHopFactor)
             {
                 moveDirection.y = jumpForce;
                 jumpTimer = 0;
                 // Чтобы можно было выпрыгнуть из бага скольжения
-                sliding = false; 
+                sliding = false;
             }
         }
-        else 
+        else
         {
             if (airControl && playerControl)
             {
@@ -294,11 +310,25 @@ public class FP_Controller : MonoBehaviour, ICrouchState
                 moveDirection = myTransform.TransformDirection(moveDirection);
             }
         }
-        
+
         moveDirection.y -= gravity * Time.deltaTime;
-        
+
         if (controller.enabled)
-            grounded = (controller.Move(moveDirection * Time.deltaTime) & CollisionFlags.Below) != 0;
+        {
+            // Сохраняем флаги коллизий, которые возвращает Move
+            CollisionFlags flags = controller.Move(moveDirection * Time.deltaTime);
+
+            // Проверяем, на земле ли мы
+            grounded = (flags & CollisionFlags.Below) != 0;
+
+            // ФИКС ПРИЛИПАНИЯ К ПОТОЛКУ:
+            // Если ударились головой (CollisionFlags.Above) и летим вверх, моментально обнуляем скорость
+            if ((flags & CollisionFlags.Above) != 0 && moveDirection.y > 0)
+            {
+                moveDirection.y = -0.1f; // Сбрасываем в небольшой минус, чтобы сразу начать падать
+            }
+        }
+
     }
 
     void Update()
@@ -365,7 +395,7 @@ public class FP_Controller : MonoBehaviour, ICrouchState
         }
 
         if (onLadder) { run = false; }
-        
+
         // Звук прыжка
         if (!isFly && jumpState == 0 && CanStand() && jump && jumpTimer >= antiBunnyHopFactor)
         {
@@ -407,17 +437,25 @@ public class FP_Controller : MonoBehaviour, ICrouchState
         CalculateMovement();
     }
 
-    private void OnControllerColliderHit (ControllerColliderHit hit) {
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
         // Игнорируем удары в режиме полета
         if (isFly) return;
 
-        if (!IsGrounded () && landTimer == 1)
+        if (!IsGrounded() && landTimer == 1)
             PlaySound(footSteps.landSound, JumpLandSource);
+
         landTimer = 0;
         jumpState = 0;
-        contactPoint = hit.point;
-        surfaceTag = hit.collider.tag;
 
+        // ИСПРАВЛЕНИЕ ТРЯСКИ:
+        // Обновляем contactPoint только если мы коснулись пола/уступа (нормаль смотрит вверх).
+        // Если мы уперлись в стену (нормаль ~0), игнорируем ее для системы скольжения.
+        if (hit.normal.y > 0.1f)
+        {
+            contactPoint = hit.point;
+            surfaceTag = hit.collider.tag;
+        }
     }
 
     private void ConfigureAttachedRigidbody()
@@ -458,22 +496,22 @@ public class FP_Controller : MonoBehaviour, ICrouchState
     public void Climb()
     {
         if (!onLadder) return;
-    
-        float verticalInput = playerInput.UseMobileInput ? 
+
+        float verticalInput = playerInput.UseMobileInput ?
             playerInput.MoveInput().z : Input.GetAxis("Vertical");
-    
+
         moveDirection = new Vector3(0, verticalInput * climbSpeed, 0);
     }
 
     private void LadderMovement()
     {
-        float verticalInput = playerInput.UseMobileInput ? 
+        float verticalInput = playerInput.UseMobileInput ?
             playerInput.MoveInput().z : Input.GetAxis("Vertical");
-        float horizontalInput = playerInput.UseMobileInput ? 
+        float horizontalInput = playerInput.UseMobileInput ?
             playerInput.MoveInput().x : Input.GetAxis("Horizontal");
-    
+
         Vector3 moveDir = camTransform.forward * verticalInput + camTransform.right * horizontalInput;
-        
+
         if (jump && canJump)
         {
             moveDirection = (camTransform.forward * -1.0f + Vector3.up * 1.5f).normalized * jumpForce;
@@ -483,7 +521,7 @@ public class FP_Controller : MonoBehaviour, ICrouchState
         }
 
         if (moveDir.magnitude > 1f) moveDir.Normalize();
-    
+
         if (Mathf.Abs(verticalInput) < 0.1f && Mathf.Abs(horizontalInput) < 0.1f)
         {
             moveDirection = Vector3.zero;
@@ -493,7 +531,7 @@ public class FP_Controller : MonoBehaviour, ICrouchState
         {
             moveDirection = moveDir * climbSpeed;
         }
-    
+
         controller.Move(moveDirection * Time.deltaTime);
     }
     void PlaySound(AudioClip audio, AudioSource source)

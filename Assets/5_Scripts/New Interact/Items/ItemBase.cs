@@ -10,13 +10,13 @@ public abstract class ItemBase : MonoBehaviour, IItem
     protected Rigidbody rb;
     protected Collider[] colliders;
     protected int collidersCount;
-    
+
     // --- НОВОЕ: Звук ---
     protected AudioSource audioSource;
     private float lastHitTime;
 
     // --- НОВОЕ: Запоминаем родной размер ---
-    public Vector3 InitialScale { get; private set; } 
+    public Vector3 InitialScale { get; private set; }
     private System.Collections.Generic.Dictionary<Transform, int> originalLayers = new System.Collections.Generic.Dictionary<Transform, int>();
 
     protected virtual void Awake()
@@ -45,12 +45,12 @@ public abstract class ItemBase : MonoBehaviour, IItem
     }
 
     // --- НОВОЕ: Статический 2D AudioSource для оптимизации ---
-    private static AudioSource shared2DAudioSource;
+    private static AudioSource sharedAudioSource;
 
     public virtual void OnPickup(GameObject holder)
     {
         this.holder = holder;
-        
+
         var worldItem = GetComponent<WorldItem>();
         if (worldItem != null)
         {
@@ -68,15 +68,15 @@ public abstract class ItemBase : MonoBehaviour, IItem
         // Воспроизводим звук подбора предмета (ОПТИМИЗИРОВАНО)
         if (definition != null && definition.pickupSound != null)
         {
-            if (shared2DAudioSource == null)
+            if (sharedAudioSource == null)
             {
-                GameObject audioObj = new GameObject("Shared_2D_AudioSource");
+                GameObject audioObj = new GameObject("SharedAudioSource");
                 DontDestroyOnLoad(audioObj);
-                shared2DAudioSource = audioObj.AddComponent<AudioSource>();
-                shared2DAudioSource.spatialBlend = 0f; // Строго 2D звук
+                sharedAudioSource = audioObj.AddComponent<AudioSource>();
+                sharedAudioSource.spatialBlend = 0f; // Строго 2D звук
             }
-            
-            shared2DAudioSource.PlayOneShot(definition.pickupSound, 1f);
+
+            sharedAudioSource.PlayOneShot(definition.pickupSound, 1f);
         }
     }
 
