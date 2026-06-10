@@ -107,6 +107,34 @@ public class WorldItem : MonoBehaviour
         }
     }
 
+    public void CancelFreeze()
+    {
+        if (_unfreezeCoroutine != null)
+        {
+            StopCoroutine(_unfreezeCoroutine);
+            _unfreezeCoroutine = null;
+        }
+
+        var rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.constraints = _spawnConstraints;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (_unfreezeCoroutine != null)
+        {
+            _unfreezeCoroutine = null;
+            var rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.constraints = _spawnConstraints;
+            }
+        }
+    }
+
     private IEnumerator UnfreezeAfterDelay(Rigidbody rb)
     {
         // Ждём один физический кадр чтобы позиция гарантированно применилась

@@ -24,6 +24,7 @@ MonoBehaviour:
   poolSize: 0
   useCooldown: 0.2
   tpBackAfterDeath: 1
+  consumeOnThrow: 1
   pickupSound: {fileID: 8300000, guid: 5b8fe2531f31f4740bda83215cb6bf9d, type: 3}
   defaultHitGroundSound: {fileID: 8300000, guid: d59e834da7ba54f4e8eaa7451ce4553a,
     type: 3}

@@ -167,6 +167,26 @@ public class Inventory : MonoBehaviour
         OnInventoryChanged?.Invoke();
     }
 
+    public bool Contains(ItemDefinition def)
+    {
+        if (def == null) return false;
+
+        for (int i = 0; i < maxSlots; i++)
+        {
+            if (slots[i].item == def) return true;
+        }
+
+        if (BackpackEnabled)
+        {
+            for (int i = 0; i < BackpackCapacity; i++)
+            {
+                if (backpack[i].item == def) return true;
+            }
+        }
+
+        return false;
+    }
+
     public int FindFirstEmptySlot()
     {
         for (int i = 0; i < maxSlots; i++)

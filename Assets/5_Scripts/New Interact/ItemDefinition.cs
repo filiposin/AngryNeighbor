@@ -32,6 +32,10 @@ public class ItemDefinition : ScriptableObject
     [Header("Optional gameplay")]
     public float useCooldown = 0.2f;
     public bool tpBackAfterDeath = true;
+    [Tooltip("Если выключить, предмет не будет тратиться при броске (для бесконечных RGB коробок)")]
+    public bool consumeOnThrow = true;
+    [Tooltip("Если включить, игрок не сможет подобрать второй такой же предмет, если он уже есть в инвентаре")]
+    public bool uniqueInInventory = false;
 
     [Header("Sounds")]
     public AudioClip pickupSound;

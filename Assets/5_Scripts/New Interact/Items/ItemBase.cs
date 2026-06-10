@@ -44,9 +44,19 @@ public abstract class ItemBase : MonoBehaviour, IItem
         definition = def;
     }
 
+    // --- НОВОЕ: Статический 2D AudioSource для оптимизации ---
+    private static AudioSource shared2DAudioSource;
+
     public virtual void OnPickup(GameObject holder)
     {
         this.holder = holder;
+        
+        var worldItem = GetComponent<WorldItem>();
+        if (worldItem != null)
+        {
+            worldItem.CancelFreeze();
+        }
+
         if (rb)
         {
             rb.velocity = Vector3.zero;
@@ -55,13 +65,18 @@ public abstract class ItemBase : MonoBehaviour, IItem
         }
         SetCollidersEnabled(false);
 
-        // Воспроизводим звук подбора предмета
+        // Воспроизводим звук подбора предмета (ОПТИМИЗИРОВАНО)
         if (definition != null && definition.pickupSound != null)
         {
-            // ИСПОЛЬЗУЕМ PlayClipAtPoint: звук доиграет до конца,
-            // даже если сам предмет сразу же будет выключен (убран в рюкзак)
-            Vector3 soundPos = Camera.main != null ? Camera.main.transform.position : transform.position;
-            AudioSource.PlayClipAtPoint(definition.pickupSound, soundPos, 1f);
+            if (shared2DAudioSource == null)
+            {
+                GameObject audioObj = new GameObject("Shared_2D_AudioSource");
+                DontDestroyOnLoad(audioObj);
+                shared2DAudioSource = audioObj.AddComponent<AudioSource>();
+                shared2DAudioSource.spatialBlend = 0f; // Строго 2D звук
+            }
+            
+            shared2DAudioSource.PlayOneShot(definition.pickupSound, 1f);
         }
     }
 

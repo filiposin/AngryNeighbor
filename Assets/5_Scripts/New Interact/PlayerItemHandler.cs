@@ -287,6 +287,19 @@ public class PlayerItemHandler : MonoBehaviour
 
         if (def == null) return;
 
+        if (def.uniqueInInventory && inventory != null && inventory.Contains(def))
+        {
+            // У игрока уже есть такой уникальный предмет, подбираем "в никуда" (удаляем со сцены)
+            itemBaseLocal.OnPickup(gameObject); // Проигрываем звук подбора
+
+            if (def.itemPrefab != null && pool != null)
+                pool.ReturnToPool(def.itemPrefab, obj);
+            else
+                Destroy(obj);
+
+            return;
+        }
+
         if (inventory != null)
         {
             EnsureModelArrays();
@@ -499,23 +512,85 @@ public class PlayerItemHandler : MonoBehaviour
         float force = heldDefinition != null ? heldDefinition.throwForce : 8f;
         Vector3 throwVelocity = camTransform.forward * force;
 
-        if (inventory != null && inventory.BackpackEnabled && (inventory.pickupMode == Inventory.PickupMode.Legacy || inventory.pickupMode == Inventory.PickupMode.Updated))
-        {
-            RemoveHeldItemFromLinkedInventory();
-        }
-        else if (heldSourceSlot >= 0 && inventory != null)
-        {
-            if (heldSourceSlot < slotModels.Length) slotModels[heldSourceSlot] = null;
-            inventory.RemoveAt(heldSourceSlot);
-        }
+        bool consume = heldDefinition == null || heldDefinition.consumeOnThrow;
 
-        ReleaseHeldObject(camTransform.position + camTransform.forward * spawnDist, camTransform.rotation, throwVelocity);
+        if (consume)
+        {
+            if (inventory != null && inventory.BackpackEnabled && (inventory.pickupMode == Inventory.PickupMode.Legacy || inventory.pickupMode == Inventory.PickupMode.Updated))
+            {
+                RemoveHeldItemFromLinkedInventory();
+            }
+            else if (heldSourceSlot >= 0 && inventory != null)
+            {
+                if (heldSourceSlot < slotModels.Length) slotModels[heldSourceSlot] = null;
+                inventory.RemoveAt(heldSourceSlot);
+            }
 
-        heldObject = null;
-        heldItemBase = null;
-        heldDefinition = null;
-        heldSourceSlot = -1;
-        animationController?.SetHeldItem(null);
+            ReleaseHeldObject(camTransform.position + camTransform.forward * spawnDist, camTransform.rotation, throwVelocity);
+
+            heldObject = null;
+            heldItemBase = null;
+            heldDefinition = null;
+            heldSourceSlot = -1;
+            animationController?.SetHeldItem(null);
+        }
+        else
+        {
+            // Бесконечное кидание (предмет остается в руке)
+            Vector3 spawnPos = camTransform.position + camTransform.forward * spawnDist;
+            Quaternion spawnRot = camTransform.rotation;
+            
+            // Спец логика для зеленой коробки (спавним в игроке)
+            bool isGreenBox = heldObject.GetComponent<ItemGreenBox>() != null;
+            if (isGreenBox)
+            {
+                spawnPos = transform.position;
+                spawnRot = transform.rotation;
+                throwVelocity = Vector3.zero;
+            }
+
+            GameObject copy;
+            if (heldDefinition != null && heldDefinition.itemPrefab != null && pool != null)
+            {
+                copy = pool.GetFromPool(heldDefinition.itemPrefab, spawnPos, spawnRot);
+            }
+            else
+            {
+                copy = Instantiate(heldObject, spawnPos, spawnRot);
+            }
+
+            copy.transform.SetParent(null);
+            copy.transform.localScale = heldItemBase != null ? heldItemBase.InitialScale : copy.transform.localScale;
+            copy.SetActive(true);
+
+            ItemBase copyBase = copy.GetComponent<ItemBase>();
+            if (copyBase != null)
+            {
+                copyBase.Initialize(heldDefinition);
+                copyBase.RestoreLayer();
+                copyBase.OnThrow(throwVelocity);
+                
+                if (isGreenBox)
+                {
+                    ((ItemGreenBox)copyBase).OnPlaced(gameObject);
+                }
+            }
+
+            Rigidbody rb = copy.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                if (isGreenBox)
+                {
+                    rb.isKinematic = true;
+                    rb.useGravity = false;
+                }
+                else
+                {
+                    ConfigureReleasedRigidbody(rb, throwVelocity);
+                }
+            }
+        }
+        
         isDroppingItem = false;
     }
 
