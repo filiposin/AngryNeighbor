@@ -36283,7 +36283,8 @@ LightmapSettings:
     m_ExportTrainingData: 0
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
-  m_LightingDataAsset: {fileID: 0}
+  m_LightingDataAsset: {fileID: 112000000, guid: 99247bca47aa1f84bb6296e7a8f0b083,
+    type: 2}
   m_LightingSettings: {fileID: 1044648060}
 --- !u!196 &3518
 NavMeshSettings:
@@ -58738,7 +58739,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &525346376268989039
 Transform:
   m_ObjectHideFlags: 0
@@ -63517,7 +63518,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!222 &3048761463940372577
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -63566,7 +63567,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &3048761463940372582
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -78945,7 +78946,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!225 &8025787382420485846
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -79478,7 +79479,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &8025787383785316876
 GameObject:
   m_ObjectHideFlags: 0
@@ -79517,7 +79518,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &8025787383785380930
 GameObject:
   m_ObjectHideFlags: 0
@@ -79537,7 +79538,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &8025787383795941684
 MonoBehaviour:
   m_ObjectHideFlags: 0

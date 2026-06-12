@@ -17,12 +17,15 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 72561430e25590149bbfb02835f9efb9, type: 3}
   itemPrefab: {fileID: 3181613621314400174, guid: 26a9adac3fc5dfa4faae455f3ae4488f,
     type: 3}
-  holdPosition: {x: -0.071, y: -0.267, z: -0.281}
-  holdEulerRotation: {x: -6.739, y: -272.761, z: -99.633}
+  holdPosition: {x: 0.105, y: -0.256, z: -0.114}
+  holdEulerRotation: {x: -6.739, y: -268.8, z: -97.01}
   throwForce: 8
   spawnDistanceFromCamera: 0.2
   poolSize: 1
   useCooldown: 0.7
+  tpBackAfterDeath: 1
+  consumeOnThrow: 1
+  uniqueInInventory: 0
   pickupSound: {fileID: 8300000, guid: 5b8fe2531f31f4740bda83215cb6bf9d, type: 3}
   defaultHitGroundSound: {fileID: 8300000, guid: d59e834da7ba54f4e8eaa7451ce4553a,
     type: 3}
