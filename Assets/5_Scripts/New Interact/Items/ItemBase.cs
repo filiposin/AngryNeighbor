@@ -171,12 +171,29 @@ public abstract class ItemBase : MonoBehaviour, IItem
 
     public void RestoreLayer()
     {
+        bool hasLayers = originalLayers.Count > 0;
+
         foreach (var kvp in originalLayers)
         {
             if (kvp.Key != null)
             {
                 kvp.Key.gameObject.layer = kvp.Value;
             }
+        }
+
+        int handLayer = LayerMask.NameToLayer("Hand");
+        
+        if (!hasLayers || gameObject.layer == handLayer)
+        {
+            int fallbackLayer = LayerMask.NameToLayer("Interactable");
+            if (fallbackLayer == -1) fallbackLayer = 0; 
+
+            if (definition != null && definition.itemPrefab != null)
+            {
+                fallbackLayer = definition.itemPrefab.layer;
+            }
+
+            SetLayerRecursively(transform, fallbackLayer);
         }
     }
 
