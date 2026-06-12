@@ -4,7 +4,7 @@ using UnityEngine.Events;
 using UnityEngine.Serialization;
 
 /// <summary>
-/// Минимальный заменитель с поддержкой пула (если PoolManager.Instance есть).
+/// Минимальный заменитель.
 /// Присоединяешь к окну, задаёшь replacementPrefab и вызываешь Replace().
 /// </summary>
 public class SimpleReplacer : MonoBehaviour, IHittable
@@ -17,9 +17,6 @@ public class SimpleReplacer : MonoBehaviour, IHittable
     public bool copyParent = false;
     public bool copyScale = false;
     public bool copyVelocity = false;
-
-    // если true — попытаемся использовать PoolManager.Instance (если его нет - Instantiate)
-    public bool usePool = true;
     
     public UnityEvent onBreak;
 
@@ -72,23 +69,12 @@ public class SimpleReplacer : MonoBehaviour, IHittable
         {
             // нет префаба — просто удаляем исходник
             LastReplaceSucceeded = true;
-            TryReturnOrDestroy(gameObject);
+            Destroy(gameObject);
             return;
         }
 
-        GameObject spawned = null;
-
-        if (usePool && PoolManager.Instance != null)
-        {
-            spawned = PoolManager.Instance.GetFromPool(replacementPrefab, transform.position, transform.rotation);
-            onBreak?.Invoke();
-        }
-
-        if (spawned == null)
-        {
-            spawned = Instantiate(replacementPrefab, transform.position, transform.rotation);
-            onBreak?.Invoke();
-        }
+        GameObject spawned = Instantiate(replacementPrefab, transform.position, transform.rotation);
+        onBreak?.Invoke();
 
         if (copyParent) spawned.transform.SetParent(transform.parent, true);
         if (copyScale) spawned.transform.localScale = transform.localScale;
@@ -104,22 +90,7 @@ public class SimpleReplacer : MonoBehaviour, IHittable
         LastSpawnedReplacement = spawned;
         LastReplaceSucceeded = true;
 
-        // удаляем/возвращаем исходный объект
-        TryReturnOrDestroy(gameObject);
-    }
-
-    
-    private void TryReturnOrDestroy(GameObject go)
-    {
-        // если объект был создан через WorldItem/ItemDefinition с заданным prefab, возвращаем в пул
-        var world = go.GetComponent<WorldItem>();
-        if (world != null && world.itemDefinition != null && world.itemDefinition.itemPrefab != null && PoolManager.Instance != null)
-        {
-            PoolManager.Instance.ReturnToPool(world.itemDefinition.itemPrefab, go);
-            return;
-        }
-
-        // иначе просто удалить
-        Destroy(go);
+        // удаляем исходный объект
+        Destroy(gameObject);
     }
 }

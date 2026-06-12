@@ -31926,7 +31926,6 @@ MonoBehaviour:
   copyParent: 0
   copyScale: 0
   copyVelocity: 0
-  usePool: 1
   onBreak:
     m_PersistentCalls:
       m_Calls: []
@@ -47783,7 +47782,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 126
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!23 &727819940
 MeshRenderer:
@@ -47843,8 +47842,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 727819939}
   m_LocalRotation: {x: 0.000038275426, y: 0.99989384, z: -0.014325758, w: -0.0026715067}
-  m_LocalPosition: {x: -64.24327, y: -3.1373587, z: -56.453857}
-  m_LocalScale: {x: 0.57574, y: 0.57574, z: 0.57574}
+  m_LocalPosition: {x: -64.24327, y: -3.204, z: -56.453857}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1403205572}
@@ -54613,6 +54612,37 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1115242838}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1843732179
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1843732180}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1843732180
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1843732179}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -4.4486732, y: -6.9671516, z: -22.075392}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 14
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1846011957 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1814348390902084350, guid: f9dab712832198747b1bc7514b0551d7,
@@ -61691,6 +61721,11 @@ PrefabInstance:
     - target: {fileID: 4459343290092157873, guid: e3ec1a9efc510ba438b17d628e0484b8,
         type: 3}
       propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4799012046850598801, guid: e3ec1a9efc510ba438b17d628e0484b8,
+        type: 3}
+      propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5355940625898918598, guid: e3ec1a9efc510ba438b17d628e0484b8,

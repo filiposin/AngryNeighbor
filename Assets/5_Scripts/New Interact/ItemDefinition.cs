@@ -13,35 +13,25 @@ public struct GroundHitSound
 public class ItemDefinition : ScriptableObject
 {
     public string id;
-    public string displayName;
     public Sprite icon;
-
-    [Tooltip("Prefab MUST have a component inheriting ItemBase")]
     public GameObject itemPrefab;
 
-    [Header("Player Hold Settings")]
+    [Header("Настройки предмета в руках игрока")]
     public Vector3 holdPosition = Vector3.zero;
     public Vector3 holdEulerRotation = Vector3.zero;
     
     public float throwForce = 8f;
     public float spawnDistanceFromCamera = 0.6f;
 
-    [Header("Pooling")]
-    public int poolSize = 6;
-
-    [Header("Optional gameplay")]
+    [Header("Геймпейные настройки")]
     public float useCooldown = 0.2f;
     public bool tpBackAfterDeath = true;
-    [Tooltip("Если выключить, предмет не будет тратиться при броске (для бесконечных RGB коробок)")]
     public bool consumeOnThrow = true;
-    [Tooltip("Если включить, игрок не сможет подобрать второй такой же предмет, если он уже есть в инвентаре")]
     public bool uniqueInInventory = false;
 
-    [Header("Sounds")]
+    [Header("Звуки")]
     public AudioClip pickupSound;
-    [Tooltip("Звук при падении предмета на любую поверхность (по умолчанию)")]
     public AudioClip defaultHitGroundSound;
-    [Tooltip("Специфичные звуки для разных слоев земли (например, для травы, бетона и т.д.)")]
     public GroundHitSound[] specificGroundHitSounds;
 
     [Header("Internal")]

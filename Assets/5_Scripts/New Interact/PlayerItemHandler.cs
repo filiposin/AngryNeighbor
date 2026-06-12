@@ -41,10 +41,8 @@ public class PlayerItemHandler : MonoBehaviour
 
     private GameObject[] slotModels;
     private GameObject[] backpackModels;
-    private static HashSet<ItemDefinition> warmedDefinitions = new HashSet<ItemDefinition>();
     private RaycastHit[] raycastHits = new RaycastHit[4];
     private Transform camTransform;
-    private PoolManager pool => PoolManager.Instance;
     private int interactMask;
     private float nextUseTime = 0f;
     private bool isDroppingItem = false;
@@ -290,12 +288,7 @@ public class PlayerItemHandler : MonoBehaviour
         if (def.uniqueInInventory && inventory != null && inventory.Contains(def))
         {
             itemBaseLocal.OnPickup(gameObject);
-
-            if (def.itemPrefab != null && pool != null)
-                pool.ReturnToPool(def.itemPrefab, obj);
-            else
-                Destroy(obj);
-
+            Destroy(obj);
             return;
         }
 
@@ -419,20 +412,13 @@ public class PlayerItemHandler : MonoBehaviour
     {
         if (def == null) return;
 
-        if (!warmedDefinitions.Contains(def) && def.itemPrefab != null && pool != null)
-        {
-            pool.WarmPool(def.itemPrefab, Mathf.Max(1, def.poolSize));
-            warmedDefinitions.Add(def);
-        }
-
         Vector3 spawnPos = camTransform.position;
         GameObject go;
-        if (def.itemPrefab != null && pool != null)
-            go = pool.GetFromPool(def.itemPrefab, spawnPos, Quaternion.identity);
-        else if (def.itemPrefab != null)
+        
+        if (def.itemPrefab != null)
             go = Instantiate(def.itemPrefab, spawnPos, Quaternion.identity);
         else
-            go = new GameObject("Temp_" + def.displayName);
+            go = new GameObject("Temp_Item"); // Убрали def.displayName
 
         var itemBase = go.GetComponent<ItemBase>();
         if (itemBase != null) itemBase.Initialize(def);
@@ -546,15 +532,7 @@ public class PlayerItemHandler : MonoBehaviour
                 throwVelocity = Vector3.zero;
             }
 
-            GameObject copy;
-            if (heldDefinition != null && heldDefinition.itemPrefab != null && pool != null)
-            {
-                copy = pool.GetFromPool(heldDefinition.itemPrefab, spawnPos, spawnRot);
-            }
-            else
-            {
-                copy = Instantiate(heldObject, spawnPos, spawnRot);
-            }
+            GameObject copy = Instantiate(heldObject, spawnPos, spawnRot);
 
             copy.transform.SetParent(null);
             copy.transform.localScale = heldItemBase != null ? heldItemBase.InitialScale : copy.transform.localScale;
@@ -810,10 +788,7 @@ public class PlayerItemHandler : MonoBehaviour
         if (removeFromLinkedInventory)
             RemoveHeldItemFromLinkedInventory();
 
-        if (heldDefinition != null && heldDefinition.itemPrefab != null && pool != null)
-            pool.ReturnToPool(heldDefinition.itemPrefab, heldObject);
-        else
-            Destroy(heldObject);
+        Destroy(heldObject);
 
         if (!removeFromLinkedInventory && slotToClear >= 0)
         {
