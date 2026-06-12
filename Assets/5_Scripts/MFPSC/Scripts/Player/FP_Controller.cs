@@ -38,6 +38,7 @@ public class FP_Controller : MonoBehaviour, ICrouchState
 
     [Header("Sliding System")]
     public bool enableSliding = true;
+    public LayerMask slideMask = ~0;
     public float slideSpeed = 2.0f;
     public float slideMaxAngle = 85f;
     public float slopeInputInfluence = 0.5f;
@@ -84,6 +85,7 @@ public class FP_Controller : MonoBehaviour, ICrouchState
     private float slideLimit;
     private float speed;
     private string surfaceTag;
+    private int groundContactLayer;
     //public int bublicfps = 60;
 
     // Новые поля для контроля проверки стояния
@@ -159,6 +161,7 @@ public class FP_Controller : MonoBehaviour, ICrouchState
         // --- FLIGHT MODE LOGIC (NO CLIP) ---
         if (isFly)
         {
+            if (onLadder) OnLadderExit();
             if (controller.enabled) controller.enabled = false;
             grounded = false;
             sliding = false;
@@ -199,12 +202,15 @@ public class FP_Controller : MonoBehaviour, ICrouchState
                 // 1. Проверяем, стоим ли мы на наклонной поверхности (склоне)
                 if (Physics.Raycast(rayStart, Vector3.down, out hit, realRayDistance))
                 {
-                    float angle = Vector3.Angle(hit.normal, Vector3.up);
-                    // Игнорируем почти вертикальные стены
-                    if (angle > slideLimit && angle < slideMaxAngle && CanSlide())
+                    if (((1 << hit.collider.gameObject.layer) & slideMask) != 0)
                     {
-                        sliding = true;
-                        hitNormal = hit.normal;
+                        float angle = Vector3.Angle(hit.normal, Vector3.up);
+                        // Игнорируем почти вертикальные стены
+                        if (angle > slideLimit && angle < slideMaxAngle && CanSlide())
+                        {
+                            sliding = true;
+                            hitNormal = hit.normal;
+                        }
                     }
                 }
                 // 2. Если луч не нашел землю, НО контроллер считается grounded, значит центр в воздухе
@@ -212,17 +218,20 @@ public class FP_Controller : MonoBehaviour, ICrouchState
                 {
                     if (CanSlide())
                     {
-                        sliding = true;
-                        isEdgeSliding = true;
+                        if (((1 << groundContactLayer) & slideMask) != 0)
+                        {
+                            sliding = true;
+                            isEdgeSliding = true;
 
-                        // Отталкиваем игрока от точки контакта с выступом
-                        edgeSlideDir = myTransform.position - contactPoint;
-                        edgeSlideDir.y = 0;
+                            // Отталкиваем игрока от точки контакта с выступом
+                            edgeSlideDir = myTransform.position - contactPoint;
+                            edgeSlideDir.y = 0;
 
-                        if (edgeSlideDir.sqrMagnitude < 0.01f)
-                            edgeSlideDir = myTransform.forward;
+                            if (edgeSlideDir.sqrMagnitude < 0.01f)
+                                edgeSlideDir = myTransform.forward;
 
-                        edgeSlideDir.Normalize();
+                            edgeSlideDir.Normalize();
+                        }
                     }
                 }
             }
@@ -455,6 +464,7 @@ public class FP_Controller : MonoBehaviour, ICrouchState
         {
             contactPoint = hit.point;
             surfaceTag = hit.collider.tag;
+            groundContactLayer = hit.gameObject.layer;
         }
     }
 
@@ -506,12 +516,11 @@ public class FP_Controller : MonoBehaviour, ICrouchState
     private void LadderMovement()
     {
         float verticalInput = playerInput.UseMobileInput ?
-            playerInput.MoveInput().z : Input.GetAxis("Vertical");
+            playerInput.MoveInput().z : Input.GetAxisRaw("Vertical");
         float horizontalInput = playerInput.UseMobileInput ?
-            playerInput.MoveInput().x : Input.GetAxis("Horizontal");
+            playerInput.MoveInput().x : Input.GetAxisRaw("Horizontal");
 
-        Vector3 moveDir = camTransform.forward * verticalInput + camTransform.right * horizontalInput;
-
+        // Прыжок (отскок от лестницы)
         if (jump && canJump)
         {
             moveDirection = (camTransform.forward * -1.0f + Vector3.up * 1.5f).normalized * jumpForce;
@@ -520,20 +529,52 @@ public class FP_Controller : MonoBehaviour, ICrouchState
             return;
         }
 
-        if (moveDir.magnitude > 1f) moveDir.Normalize();
+        // 1. Основное движение: W - строго вверх, S - строго вниз
+        Vector3 moveDir = Vector3.up * verticalInput;
 
+        // 2. Движение вбок по лестнице (A / D)
+        moveDir += myTransform.right * horizontalInput;
+
+        // 3. Логика прижимания к лестнице (ЧТОБЫ НЕ БАГАТЬСЯ)
+        Vector3 flatForward = myTransform.forward;
+
+        if (verticalInput > 0.1f)
+        {
+            // ЛЕЗЕМ ВВЕРХ: Добавляем МИКРО-пуш вперед (0.15f вместо 0.5f).
+            // Это нужно только чтобы на самом верху плавно "перевалиться" на пол, 
+            // но при этом не застревать в деревянных ступеньках на середине.
+            moveDir += flatForward * 0.15f;
+        }
+        else if (verticalInput < -0.1f)
+        {
+            // ЛЕЗЕМ ВНИЗ: НИКАКОГО пуша вперед! Оставляем 0.
+            // Если толкать вперед при спуске, ты выдавишь себя из триггера и начнется тряска.
+            moveDir += flatForward * 0.0f; 
+        }
+
+        // Зависание на лестнице, если отпустить кнопки
         if (Mathf.Abs(verticalInput) < 0.1f && Mathf.Abs(horizontalInput) < 0.1f)
         {
             moveDirection = Vector3.zero;
-            moveDirection.y -= gravity * 0.1f * Time.deltaTime;
         }
         else
         {
+            // Защита от диагонального ускорения
+            if (moveDir.magnitude > 1f) moveDir.Normalize();
             moveDirection = moveDir * climbSpeed;
         }
 
+        // Физическое перемещение контроллера
         controller.Move(moveDirection * Time.deltaTime);
+
+        // 4. АВТО-ВЫХОД ВНИЗУ
+        // Если лезем вниз и коснулись земли - выходим из режима лестницы
+        if (verticalInput < -0.1f && (controller.collisionFlags & CollisionFlags.Below) != 0)
+        {
+            OnLadderExit();
+        }
     }
+    
     void PlaySound(AudioClip audio, AudioSource source)
     {
         source.clip = audio;

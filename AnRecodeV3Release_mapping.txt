@@ -1,10 +1,10 @@
 # compiler: R8
 # compiler_version: 4.0.52
-# min_api: 22
+# min_api: 25
 # common_typos_disable
 # {"id":"com.android.tools.r8.mapping","version":"2.1"}
-# pg_map_id: 79b4dfd
-# pg_map_hash: SHA-256 79b4dfd986f606510f73c4f90b81c5d1a58b1065772b92d54bcb96a60d16f911
+# pg_map_id: 2b22f03
+# pg_map_hash: SHA-256 2b22f0393b223d62fd6eed39001c6747b7262801c8141e9a2171374ede7d2b1e
 bitter.jnibridge.a$$ExternalSyntheticApiModelOutline0 -> bitter.jnibridge.b:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
@@ -28,56 +28,16 @@ bitter.jnibridge.a$$ExternalSyntheticApiModelOutline3 -> bitter.jnibridge.e:
 com.google.androidgamesdk.SwappyDisplayManager -> com.google.androidgamesdk.SwappyDisplayManager:
     android.app.Activity -$$Nest$fgetmActivity(com.google.androidgamesdk.SwappyDisplayManager) -> a
       # {"id":"com.android.tools.r8.synthesized"}
-com.google.androidgamesdk.SwappyDisplayManager$$ExternalSyntheticApiModelOutline0 -> a.a:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-    java.lang.Object com.google.androidgamesdk.SwappyDisplayManager$$InternalSyntheticApiModelOutline$1$0de50b4836c132bb6c1b7fcbcbc5e4ee491ddf8d1de4fdcbc82e897c3023c7c0$0.m(android.app.Activity,java.lang.Class) -> a
-      # {"id":"com.android.tools.r8.synthesized"}
-com.google.androidgamesdk.SwappyDisplayManager$$ExternalSyntheticApiModelOutline1 -> a.b:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-    android.view.Display$Mode com.google.androidgamesdk.SwappyDisplayManager$$InternalSyntheticApiModelOutline$1$0de50b4836c132bb6c1b7fcbcbc5e4ee491ddf8d1de4fdcbc82e897c3023c7c0$1.m(android.view.Display) -> a
-      # {"id":"com.android.tools.r8.synthesized"}
-com.google.androidgamesdk.SwappyDisplayManager$$ExternalSyntheticApiModelOutline2 -> a.c:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-    android.view.Display$Mode[] com.google.androidgamesdk.SwappyDisplayManager$$InternalSyntheticApiModelOutline$1$522f0e3b93d2aee73354aad0cc2ce235da1908627f15586c4ab937b3db863a8f$0.m(android.view.Display) -> a
-      # {"id":"com.android.tools.r8.synthesized"}
-com.google.androidgamesdk.SwappyDisplayManager$$ExternalSyntheticApiModelOutline3 -> a.d:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-    float com.google.androidgamesdk.SwappyDisplayManager$$InternalSyntheticApiModelOutline$1$522f0e3b93d2aee73354aad0cc2ce235da1908627f15586c4ab937b3db863a8f$1.m(android.view.Display$Mode) -> a
-      # {"id":"com.android.tools.r8.synthesized"}
-com.google.androidgamesdk.SwappyDisplayManager$$ExternalSyntheticApiModelOutline4 -> a.e:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-    int com.google.androidgamesdk.SwappyDisplayManager$$InternalSyntheticApiModelOutline$1$522f0e3b93d2aee73354aad0cc2ce235da1908627f15586c4ab937b3db863a8f$2.m(android.view.Display$Mode) -> a
-      # {"id":"com.android.tools.r8.synthesized"}
-com.google.androidgamesdk.SwappyDisplayManager$$ExternalSyntheticApiModelOutline5 -> a.f:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-    int com.google.androidgamesdk.SwappyDisplayManager$$InternalSyntheticApiModelOutline$1$b749afffc67d8ef99e7013ee08b464601e6c4aee197f293bbf7c0d2edc94a88a$1.m(android.view.Display$Mode) -> a
-      # {"id":"com.android.tools.r8.synthesized"}
-com.google.androidgamesdk.SwappyDisplayManager$$ExternalSyntheticApiModelOutline6 -> a.g:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-    int com.google.androidgamesdk.SwappyDisplayManager$$InternalSyntheticApiModelOutline$1$b749afffc67d8ef99e7013ee08b464601e6c4aee197f293bbf7c0d2edc94a88a$3.m(android.view.Display$Mode) -> a
-      # {"id":"com.android.tools.r8.synthesized"}
 com.google.androidgamesdk.b -> com.google.androidgamesdk.b:
     void <init>(com.google.androidgamesdk.b-IA) -> <init>
       # {"id":"com.android.tools.r8.synthesized"}
-com.google.androidgamesdk.b-IA -> a.h:
+com.google.androidgamesdk.b-IA -> a.a:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
-com.google.androidgamesdk.c$$ExternalSyntheticApiModelOutline0 -> a.i:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-    void com.google.androidgamesdk.c$$InternalSyntheticApiModelOutline$1$59115e61903ea82192928e8a805ce070ce569fd3998a2f0795f5300ac1d412b5$0.m(android.view.WindowManager$LayoutParams,int) -> a
-      # {"id":"com.android.tools.r8.synthesized"}
 com.google.androidgamesdk.d -> com.google.androidgamesdk.d:
     void <init>(com.google.androidgamesdk.d-IA) -> <init>
       # {"id":"com.android.tools.r8.synthesized"}
-com.google.androidgamesdk.d-IA -> a.j:
+com.google.androidgamesdk.d-IA -> a.b:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
 com.unity3d.player.C0 -> com.unity3d.player.C0:
@@ -113,31 +73,11 @@ com.unity3d.player.L0 -> com.unity3d.player.L0:
       # {"id":"com.android.tools.r8.synthesized"}
     void -$$Nest$fputi(com.unity3d.player.L0,boolean) -> j
       # {"id":"com.android.tools.r8.synthesized"}
-com.unity3d.player.MultiWindowSupport$$ExternalSyntheticApiModelOutline0 -> com.unity3d.player.a1:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-    boolean com.unity3d.player.MultiWindowSupport$$InternalSyntheticApiModelOutline$1$9a81a94f341d90d3e5b43c52ebb178f91bb2a5fab6ce82488de68f35b94c27cb$0.m(android.app.Activity) -> a
-      # {"id":"com.android.tools.r8.synthesized"}
 com.unity3d.player.NetworkConnectivity -> com.unity3d.player.NetworkConnectivity:
     void -$$Nest$fputa(com.unity3d.player.NetworkConnectivity,int) -> a
       # {"id":"com.android.tools.r8.synthesized"}
-com.unity3d.player.NetworkConnectivity$$ExternalSyntheticApiModelOutline0 -> com.unity3d.player.b1:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-    void com.unity3d.player.NetworkConnectivity$$InternalSyntheticApiModelOutline$1$3f80fb905715db788e1bb6f42377445d6169f0032e0a5183c7af36a316d9bed3$0.m(android.net.ConnectivityManager,android.net.ConnectivityManager$NetworkCallback) -> a
-      # {"id":"com.android.tools.r8.synthesized"}
 com.unity3d.player.PermissionFragment -> com.unity3d.player.PermissionFragment:
     void -$$Nest$mreportAllDenied(com.unity3d.player.PermissionFragment,java.lang.String[]) -> a
-      # {"id":"com.android.tools.r8.synthesized"}
-com.unity3d.player.PermissionFragment$$ExternalSyntheticApiModelOutline0 -> com.unity3d.player.c1:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-    void com.unity3d.player.PermissionFragment$$InternalSyntheticApiModelOutline$1$4e296ecfc502907c84cf65ef9933edd977e5df726f7345173a6cc7538981d3e4$0.m(android.app.Fragment,java.lang.String[],int) -> a
-      # {"id":"com.android.tools.r8.synthesized"}
-com.unity3d.player.PermissionFragment$$ExternalSyntheticApiModelOutline1 -> com.unity3d.player.d1:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-    boolean com.unity3d.player.PermissionFragment$$InternalSyntheticApiModelOutline$1$b061deb9d79bf619be35321a1941a0d53f427d8f3d8afd43449ec013e628966c$0.m(android.app.Activity,java.lang.String) -> a
       # {"id":"com.android.tools.r8.synthesized"}
 com.unity3d.player.ReflectionHelper -> com.unity3d.player.ReflectionHelper:
     long -$$Nest$sfgetb() -> a
@@ -278,15 +218,10 @@ com.unity3d.player.q -> com.unity3d.player.q:
       # {"id":"com.android.tools.r8.synthesized"}
     java.util.concurrent.Semaphore -$$Nest$sfgetD() -> p
       # {"id":"com.android.tools.r8.synthesized"}
-com.unity3d.player.v$$ExternalSyntheticApiModelOutline0 -> com.unity3d.player.e1:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-    void com.unity3d.player.v$$InternalSyntheticApiModelOutline$1$aff73f2b96f0c74347c7e09ef4df8e0b705999702c63be01ae8a9fe6c6469564$0.m(android.view.SurfaceView,android.graphics.Bitmap,android.view.PixelCopy$OnPixelCopyFinishedListener,android.os.Handler) -> a
-      # {"id":"com.android.tools.r8.synthesized"}
 com.unity3d.player.v0 -> com.unity3d.player.v0:
     void <init>(com.unity3d.player.UnityPlayer,com.unity3d.player.v0-IA) -> <init>
       # {"id":"com.android.tools.r8.synthesized"}
-com.unity3d.player.v0-IA -> com.unity3d.player.f1:
+com.unity3d.player.v0-IA -> com.unity3d.player.a1:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
 com.unity3d.player.y -> com.unity3d.player.y:
@@ -297,7 +232,7 @@ com.unity3d.player.y0 -> com.unity3d.player.y0:
       # {"id":"com.android.tools.r8.synthesized"}
     void -$$Nest$ma(com.unity3d.player.y0,com.unity3d.player.w0) -> a
       # {"id":"com.android.tools.r8.synthesized"}
-com.unity3d.player.y0-IA -> com.unity3d.player.g1:
+com.unity3d.player.y0-IA -> com.unity3d.player.b1:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
 com.unity3d.player.z -> com.unity3d.player.z:
@@ -310,6 +245,6 @@ com.unity3d.player.z -> com.unity3d.player.z:
 com.unity3d.player.z0 -> com.unity3d.player.z0:
     void <init>(com.unity3d.player.UnityPlayer,com.unity3d.player.z0-IA) -> <init>
       # {"id":"com.android.tools.r8.synthesized"}
-com.unity3d.player.z0-IA -> com.unity3d.player.h1:
+com.unity3d.player.z0-IA -> com.unity3d.player.c1:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}

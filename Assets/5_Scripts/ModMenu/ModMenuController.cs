@@ -219,6 +219,7 @@ public class ModMenuController : MonoBehaviour
 
             if (flyUpMode)
             {
+                if (playerController.onLadder) playerController.OnLadderExit();
                 if (playerController.controller.enabled) playerController.controller.enabled = false;
                 playerController.transform.position += Vector3.up * 8f * Time.unscaledDeltaTime;
             }

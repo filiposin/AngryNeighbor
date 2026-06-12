@@ -92,6 +92,7 @@ public class FP_Player_Inspector : Editor {
         if (fP_Controller.enableSliding)
         {
             EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(this.serializedObject.FindProperty("slideMask"));
             fP_Controller.slideMaxAngle = EditorGUILayout.FloatField("Max Slide Angle", fP_Controller.slideMaxAngle);
             fP_Controller.slopeInputInfluence = EditorGUILayout.FloatField("Slope Input Influence", fP_Controller.slopeInputInfluence);
             fP_Controller.edgePushMultiplier = EditorGUILayout.FloatField("Edge Push Multiplier", fP_Controller.edgePushMultiplier);
