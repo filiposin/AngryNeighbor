@@ -348,7 +348,6 @@ public class node_AIMovement : MonoBehaviour
 			}
 			if (myNodes.Count == 0)
 			{
-				Debug.LogWarning("No suitable Nodes");
 				useNodeWander = false;
 				useWander = true;
 			}
@@ -385,7 +384,6 @@ public class node_AIMovement : MonoBehaviour
 					if (navMeshPath.status == NavMeshPathStatus.PathPartial || navMeshPath.status == NavMeshPathStatus.PathInvalid)
 					{
 						wanderSpotFound = false;
-						Debug.Log("partial or invalid path. fix navmesh");
 						timeOutClock++;
 					}
 					else
@@ -404,7 +402,6 @@ public class node_AIMovement : MonoBehaviour
 			}
 			if (timeOutClock >= findWanderSpotTimeOutMax)
 			{
-				Debug.Log("valid wander spot could not be found. Agent using nodeWander mode.");
 				useWander = false;
 				useNodeWander = true;
 			}
@@ -1224,7 +1221,6 @@ public class node_AIMovement : MonoBehaviour
 				if (navMeshPath.status == NavMeshPathStatus.PathPartial || navMeshPath.status == NavMeshPathStatus.PathInvalid)
 				{
 					wanderSpotFound = false;
-					Debug.Log("partial or invalid path. fix navmesh");
 					timeOutClock++;
 				}
 				else
@@ -1243,7 +1239,6 @@ public class node_AIMovement : MonoBehaviour
 		}
 		if (timeOutClock >= findWanderSpotTimeOutMax)
 		{
-			Debug.Log("valid wander spot could not be found. Agent using nodeWander mode.");
 			useWander = false;
 			useNodeWander = true;
 		}

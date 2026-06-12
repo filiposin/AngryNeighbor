@@ -289,8 +289,7 @@ public class PlayerItemHandler : MonoBehaviour
 
         if (def.uniqueInInventory && inventory != null && inventory.Contains(def))
         {
-            // У игрока уже есть такой уникальный предмет, подбираем "в никуда" (удаляем со сцены)
-            itemBaseLocal.OnPickup(gameObject); // Проигрываем звук подбора
+            itemBaseLocal.OnPickup(gameObject);
 
             if (def.itemPrefab != null && pool != null)
                 pool.ReturnToPool(def.itemPrefab, obj);
@@ -536,11 +535,9 @@ public class PlayerItemHandler : MonoBehaviour
         }
         else
         {
-            // Бесконечное кидание (предмет остается в руке)
             Vector3 spawnPos = camTransform.position + camTransform.forward * spawnDist;
             Quaternion spawnRot = camTransform.rotation;
             
-            // Спец логика для зеленой коробки (спавним в игроке)
             bool isGreenBox = heldObject.GetComponent<ItemGreenBox>() != null;
             if (isGreenBox)
             {

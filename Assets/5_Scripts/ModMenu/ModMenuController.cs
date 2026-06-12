@@ -754,7 +754,7 @@ public class ModMenuController : MonoBehaviour
         }
         else
         {
-            GUILayout.Space(29); // Свободное место, если нет детей (чтобы выровнять)
+            GUILayout.Space(29);
         }
         
         if (!obj.activeInHierarchy) GUI.color = Color.gray;
@@ -807,11 +807,9 @@ public class ModMenuController : MonoBehaviour
     void RefreshHierarchy()
     {
         sceneObjects.Clear();
-        // Находим все объекты в сцене
         GameObject[] allObjects = FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         foreach (var obj in allObjects)
         {
-            // Убираем скрытые объекты или объекты, которые нам не нужны в иерархии (по желанию)
             if (obj.transform.parent == null)
             {
                 sceneObjects.Add(obj);
@@ -819,7 +817,6 @@ public class ModMenuController : MonoBehaviour
         }
     }
 
-    // --- EDITOR LOGIC & HELPERS ---
     void SpawnPrimitive(PrimitiveType type, string typeName)
     {
         if (playerController == null) return;
@@ -868,7 +865,6 @@ public class ModMenuController : MonoBehaviour
     void UpdateEnemyVision() { foreach (var e in FindObjectsByType<node_AIMovement>(FindObjectsSortMode.None)) { e.detectionSettings.normalVisionDistance = invisibleMode ? 0f : 40f; e.detectionSettings.pursueVisionDistance = invisibleMode ? 0f : 100f; e.detectionSettings.visionDistance = invisibleMode ? 0f : 40f; } }
     void UpdateEnemyFreeze() { foreach (var e in FindObjectsByType<node_AIMovement>(FindObjectsSortMode.None)) { var agent = e.GetComponent<UnityEngine.AI.NavMeshAgent>(); if(agent) agent.isStopped = freezeEnemy; e.enabled = !freezeEnemy; } }
     
-    // --- MEME FUNCTIONS ---
     void EnableSonicMode()
     {
         customWalkSpeed = 50f;
@@ -900,10 +896,10 @@ public class ModMenuController : MonoBehaviour
         Vector3 origin = playerController != null ? playerController.transform.position : Vector3.zero;
         foreach (var rb in rbs)
         {
-            if (rb.gameObject == playerController?.gameObject) continue; // Игрока не трогаем
+            if (rb.gameObject == playerController?.gameObject) continue;
             if (rb.isKinematic) rb.isKinematic = false;
-            rb.AddExplosionForce(5000f, origin, 100f, 10f); // Сильный отлет + вверх
-            rb.AddTorque(UnityEngine.Random.insideUnitSphere * 100f, ForceMode.VelocityChange); // Раскрутка
+            rb.AddExplosionForce(5000f, origin, 100f, 10f);
+            rb.AddTorque(UnityEngine.Random.insideUnitSphere * 100f, ForceMode.VelocityChange);
         }
     }
 
@@ -935,7 +931,6 @@ public class ModMenuController : MonoBehaviour
         Vector3 w2s_f = mainCam.WorldToScreenPoint(foot); Vector3 w2s_h = mainCam.WorldToScreenPoint(head);
         if (w2s_f.z <= 0) return;
         
-        // Переводим координаты для scaled matrix
         if (Application.isMobilePlatform) 
         {
             w2s_f.x *= 1280f / Screen.width; w2s_f.y *= 720f / Screen.height;

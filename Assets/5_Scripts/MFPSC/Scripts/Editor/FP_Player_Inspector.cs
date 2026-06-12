@@ -22,14 +22,12 @@ public class FP_Player_Inspector : Editor {
 
         cntrlr = (MonoScript)EditorGUILayout.ObjectField("Script", cntrlr, typeof(FP_Controller), false);
         
-        // Основные параметры
         fP_Controller.canControl = EditorGUILayout.Toggle("Can Control", fP_Controller.canControl);
         fP_Controller.walkSpeed = EditorGUILayout.FloatField("Walk Speed", fP_Controller.walkSpeed);
         fP_Controller.gravity = EditorGUILayout.FloatField("Gravity", fP_Controller.gravity);
         fP_Controller.airControl = EditorGUILayout.Toggle("Air Control", fP_Controller.airControl);
         EditorGUILayout.Space();
 
-        // --- FLIGHT MODE SECTION ---
         EditorGUILayout.BeginHorizontal();
         fP_Controller.isFly = EditorGUILayout.ToggleLeft("Fly Mode", fP_Controller.isFly, GUILayout.Width(70));
         if (fP_Controller.isFly)
@@ -38,9 +36,7 @@ public class FP_Player_Inspector : Editor {
             fP_Controller.flySpeed = EditorGUILayout.FloatField("", fP_Controller.flySpeed, GUILayout.Width(50));
         }
         EditorGUILayout.EndHorizontal();
-        // ---------------------------
 
-        // Run Section
         EditorGUILayout.BeginHorizontal();
         fP_Controller.canRun = EditorGUILayout.ToggleLeft("Run", fP_Controller.canRun, GUILayout.Width(70));
         if(fP_Controller.canRun)
@@ -51,7 +47,6 @@ public class FP_Player_Inspector : Editor {
         }
         EditorGUILayout.EndHorizontal();
 
-        // Jump Section
         EditorGUILayout.BeginHorizontal();
         fP_Controller.canJump = EditorGUILayout.ToggleLeft("Jump", fP_Controller.canJump, GUILayout.Width(70));
         if (fP_Controller.canJump)
@@ -62,7 +57,6 @@ public class FP_Player_Inspector : Editor {
         }
         EditorGUILayout.EndHorizontal();
 
-        // Crouch Section
         EditorGUILayout.BeginHorizontal();
         fP_Controller.canCrouch = EditorGUILayout.ToggleLeft("Crouch", fP_Controller.canCrouch, GUILayout.Width(70));
         if (fP_Controller.canCrouch)
@@ -79,7 +73,6 @@ public class FP_Player_Inspector : Editor {
         }
         EditorGUILayout.Space();
 
-        // Slide Section
         EditorGUILayout.BeginHorizontal();
         fP_Controller.enableSliding = EditorGUILayout.ToggleLeft("Slide", fP_Controller.enableSliding, GUILayout.Width(70));
         if (fP_Controller.enableSliding)
