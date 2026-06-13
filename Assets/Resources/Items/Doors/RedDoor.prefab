@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3229543376364320575}
   - component: {fileID: 3229543376364320574}
   - component: {fileID: 3229543376364320573}
-  m_Layer: 0
+  m_Layer: 20
   m_Name: lock (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -203,7 +203,6 @@ MonoBehaviour:
   copyParent: 0
   copyScale: 1
   copyVelocity: 0
-  usePool: 1
   onBreak:
     m_PersistentCalls:
       m_Calls: []
@@ -798,7 +797,6 @@ MonoBehaviour:
   copyParent: 0
   copyScale: 1
   copyVelocity: 0
-  usePool: 1
   onBreak:
     m_PersistentCalls:
       m_Calls: []

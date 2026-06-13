@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: Box
   m_EditorClassIdentifier: 
   id: Box
-  displayName: 
   icon: {fileID: 21300000, guid: d8aaf556376dd5243887214448ddc35b, type: 3}
   itemPrefab: {fileID: 8010081819971878718, guid: a00008b715dd3be44a2cf4ecd6a745ce,
     type: 3}
@@ -21,10 +20,10 @@ MonoBehaviour:
   holdEulerRotation: {x: -85.704, y: -92.089, z: 98.695}
   throwForce: 8
   spawnDistanceFromCamera: 0.1
-  poolSize: 0
   useCooldown: 0.2
   tpBackAfterDeath: 1
   consumeOnThrow: 1
+  uniqueInInventory: 0
   pickupSound: {fileID: 8300000, guid: 5b8fe2531f31f4740bda83215cb6bf9d, type: 3}
   defaultHitGroundSound: {fileID: 8300000, guid: d59e834da7ba54f4e8eaa7451ce4553a,
     type: 3}

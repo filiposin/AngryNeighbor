@@ -29,8 +29,12 @@ public class PatrolNode : MonoBehaviour
     [Tooltip("Заморозить ИИ на указанное время (сек) после прибытия на спец-ноду")]
     public float freezeSeconds = 2f;
 
-    public bool hasSound = false;
-    public AudioSource specialAudio;
+    [Header("Special Node: Doors")]
+    [Tooltip("Объекты со скриптом Door или DoorEasy, которые нужно открыть (вызвать Open) при прибытии")]
+    public List<GameObject> doorsToOpenOnArrive = new List<GameObject>();
+    
+    [Tooltip("Объекты со скриптом Door или DoorEasy, которые нужно закрыть (вызвать Close) при уходе с ноды")]
+    public List<GameObject> doorsToCloseOnLeave = new List<GameObject>();
 
     [Header("Special Node: GameObject toggles")]
     [Tooltip("Эти GameObject включить при прибытии (active = true)")]

@@ -3,10 +3,6 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Serialization;
 
-/// <summary>
-/// Минимальный заменитель.
-/// Присоединяешь к окну, задаёшь replacementPrefab и вызываешь Replace().
-/// </summary>
 public class SimpleReplacer : MonoBehaviour, IHittable
 {
     [Tooltip("Префаб, которым заменить этот объект")]
@@ -29,7 +25,6 @@ public class SimpleReplacer : MonoBehaviour, IHittable
         LastSpawnedReplacement = null;
         LastReplaceSucceeded = false;
 
-        // 1. Проверяем, есть ли пришедший id в нашем массиве разрешенных
         bool isValid = false;
         if (usedIds != null)
         {
@@ -43,10 +38,8 @@ public class SimpleReplacer : MonoBehaviour, IHittable
             }
         }
 
-        // Если ID не совпал ни с одним из массива — выходим
         if (!isValid) return;
 
-        // 2. Старая логика подсчета ударов
         if (currentHits < maxHits) currentHits++;
         
         if (currentHits >= maxHits)
@@ -67,7 +60,6 @@ public class SimpleReplacer : MonoBehaviour, IHittable
 
         if (replacementPrefab == null)
         {
-            // нет префаба — просто удаляем исходник
             LastReplaceSucceeded = true;
             Destroy(gameObject);
             return;
@@ -90,7 +82,6 @@ public class SimpleReplacer : MonoBehaviour, IHittable
         LastSpawnedReplacement = spawned;
         LastReplaceSucceeded = true;
 
-        // удаляем исходный объект
         Destroy(gameObject);
     }
 }

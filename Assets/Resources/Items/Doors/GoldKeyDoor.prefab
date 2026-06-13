@@ -311,12 +311,11 @@ MonoBehaviour:
   replacementPrefab: {fileID: 2505921519273292578, guid: 1feaa7caa7cddf84ab1d5d0068fe8d43,
     type: 3}
   usedIds:
-  - "\u0421rowbar"
+  - Crowbar
   maxHits: 1
   copyParent: 0
   copyScale: 1
   copyVelocity: 0
-  usePool: 1
   onBreak:
     m_PersistentCalls:
       m_Calls: []
@@ -345,7 +344,7 @@ GameObject:
   - component: {fileID: 1489598159155259695}
   - component: {fileID: 2838669279196587188}
   - component: {fileID: 1253940995342743715}
-  m_Layer: 0
+  m_Layer: 20
   m_Name: lock (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -531,12 +530,11 @@ MonoBehaviour:
   replacementPrefab: {fileID: 2505921519273292578, guid: 1feaa7caa7cddf84ab1d5d0068fe8d43,
     type: 3}
   usedIds:
-  - "\u0421rowbar"
+  - Crowbar
   maxHits: 1
   copyParent: 0
   copyScale: 1
   copyVelocity: 0
-  usePool: 1
   onBreak:
     m_PersistentCalls:
       m_Calls: []

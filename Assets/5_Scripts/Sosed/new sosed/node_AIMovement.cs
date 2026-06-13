@@ -994,10 +994,31 @@ public class node_AIMovement : MonoBehaviour
 				if (go2 != null) PatrolNode.SetActiveOnGameObject(go2, true);
 			}
 		}
-		if (node.hasSound && node.specialAudio)
+		
+		// Логика открытия дверей
+		if (node.doorsToOpenOnArrive != null)
 		{
-			node.specialAudio.Play();
+			foreach (GameObject doorObj in node.doorsToOpenOnArrive)
+			{
+				if (doorObj != null)
+				{
+					Door door = doorObj.GetComponent<Door>();
+					if (door != null)
+					{
+						door.Open();
+					}
+					else
+					{
+						DoorEasy doorEasy = doorObj.GetComponent<DoorEasy>();
+						if (doorEasy != null)
+						{
+							doorEasy.Open();
+						}
+					}
+				}
+			}
 		}
+
 		lastPatrolNode = node;
 		patrolEffectsApplied = true;
 	}
@@ -1041,9 +1062,29 @@ public class node_AIMovement : MonoBehaviour
 				if (go2 != null) PatrolNode.SetActiveOnGameObject(go2, false);
 			}
 		}
-		if (node.hasSound && node.specialAudio)
+		
+		// Логика закрытия дверей при уходе
+		if (node.doorsToCloseOnLeave != null)
 		{
-			node.specialAudio.Stop();
+			foreach (GameObject doorObj in node.doorsToCloseOnLeave)
+			{
+				if (doorObj != null)
+				{
+					Door door = doorObj.GetComponent<Door>();
+					if (door != null)
+					{
+						door.Close();
+					}
+					else
+					{
+						DoorEasy doorEasy = doorObj.GetComponent<DoorEasy>();
+						if (doorEasy != null)
+						{
+							doorEasy.Close();
+						}
+					}
+				}
+			}
 		}
 		
 		var allSmrs = GetComponentsInChildren<SkinnedMeshRenderer>(true);

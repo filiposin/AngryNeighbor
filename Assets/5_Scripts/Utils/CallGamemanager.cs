@@ -12,8 +12,6 @@ public class CallGamemanager : MonoBehaviour
         GameManager.Instance.SetPause(isPaused);
     }
 
-    // Повесь этот метод на OnClick() кнопки "Настройки" ВНУТРИ ИНВЕНТАРЯ!
-    // Тебе больше не нужно передавать галочки true/false, просто вызови этот метод.
     public void CallSettingsFromInventory()
     {
         GameManager.Instance.OpenSettingsFromInventory();

@@ -9,13 +9,11 @@ public class GameManager : MonoBehaviour
 
     public static GameManager Instance;
 
-    // Событие, которое будет сообщать другим скриптам, что настройки открылись/закрылись
     public event Action<bool> OnSettingsToggled;
 
     public bool IsSettingsOpen => settings != null && settings.activeSelf;
     public bool IsPauseOpen => pause != null && pause.activeSelf;
 
-    // Переменная-память: были ли настройки открыты из инвентаря?
     private bool _openedFromInventory = false;
 
     private void Awake()
@@ -49,19 +47,15 @@ public class GameManager : MonoBehaviour
     {
         if (settings) settings.SetActive(isOn);
         
-        // Вызываем событие для меню (чтобы скрыть/показать кнопки и логотип)
         OnSettingsToggled?.Invoke(isOn);
         UpdatePlayerControl();
 
-        // Если настройки ЗАКРЫВАЮТСЯ, и они были открыты из инвентаря:
         if (!isOn && _openedFromInventory)
         {
-            _openedFromInventory = false; // сбрасываем память
+            _openedFromInventory = false;
             
-            // Закрываем паузу, которую открыли в OpenSettingsFromInventory
             SetPause(false);
 
-            // Открываем инвентарь обратно
             if (PlayerItemHandler.inst != null)
             {
                 PlayerItemHandler.inst.SetInventoryOpen(true);
@@ -69,18 +63,15 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // НОВЫЙ МЕТОД: Вызывать только при нажатии на кнопку настроек В ИНВЕНТАРЕ
     public void OpenSettingsFromInventory()
     {
-        _openedFromInventory = true; // Запоминаем
+        _openedFromInventory = true;
 
-        // Закрываем инвентарь
         if (PlayerItemHandler.inst != null)
         {
             PlayerItemHandler.inst.SetInventoryOpen(false);
         }
 
-        // Открываем настройки и ставим паузу
         SetSettings(true);
         SetPause(true);
     }

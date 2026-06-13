@@ -164,7 +164,6 @@ MonoBehaviour:
   doorMask:
     serializedVersion: 2
     m_Bits: 64
-  checker: {fileID: 0}
   consumeOnUse: 1
 --- !u!114 &4883621018085310501
 MonoBehaviour:
@@ -178,7 +177,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e96b5cfc81fed5429ecbbf0ed9e01f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemDefinition: {fileID: 11400000, guid: 49e63f9f548555b41aeffe6342e18070, type: 2}
+  itemDefinition: {fileID: 11400000, guid: a03b6492fbaceb5488bf3e36eea278be, type: 2}
+  freezeDurationAfterReturn: 2
 --- !u!114 &-6412822893970537789
 MonoBehaviour:
   m_ObjectHideFlags: 0
